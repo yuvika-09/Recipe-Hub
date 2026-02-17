@@ -2,6 +2,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const Recipe = require("./models/Recipe");
+const RecipeRequest = require("./models/RecipeRequest");
 const path = require("path");
 require("dotenv").config({ path: path.resolve(__dirname, "../../.env") });
 
@@ -26,46 +27,85 @@ const Saved = mongoose.model("Saved", {
 const router = express.Router();
 
 
-// CREATE RECIPE
-router.post("/", async (req, res) => {
-    const recipe = await Recipe.create(req.body);
-    res.json(recipe);
+// CREATE RECIPE REQUEST
+router.post("/", async (req,res)=>{
+
+  const request = await RecipeRequest.create({
+    type: "CREATE",
+    requestedBy: req.body.createdBy,
+    data: req.body
+  });
+
+  res.json({
+    message: "Recipe sent for approval",
+    request
+  });
 });
+
 
 // GET APPROVED RECIPES
 router.get("/", async (req, res) => {
     const page = Number(req.query.page) || 1;
     const limit = 5;
 
-    const recipes = await Recipe.find({ status: "APPROVED" })
+    const recipes = await Recipe.find({})
         .skip((page - 1) * limit)
         .limit(limit);
 
     res.json(recipes);
 });
 
-// ADMIN APPROVE
-router.put("/approve/:id", async (req, res) => {
-    await Recipe.findByIdAndUpdate(req.params.id, {
-        status: "APPROVED"
-    });
+// APPROVE REQUEST
+router.put("/requests/approve/:id", async (req,res)=>{
 
-    await publisher.publish(
-        "recipe-approved",
-        "Your recipe was approved!"
+  const request =
+    await RecipeRequest.findById(req.params.id);
+
+  if(!request) return res.status(404).send("Not found");
+
+  // CREATE recipe
+  if(request.type === "CREATE"){
+    await Recipe.create(request.data);
+  }
+
+  // UPDATE recipe
+  if(request.type === "UPDATE"){
+    await Recipe.findByIdAndUpdate(
+      request.recipeId,
+      request.data
     );
+  }
 
-    res.send("Approved");
+  // DELETE recipe
+  if(request.type === "DELETE"){
+    await Recipe.findByIdAndDelete(
+      request.recipeId
+    );
+  }
+
+  request.status = "APPROVED";
+  request.reviewedBy = "ADMIN";
+  request.reviewedAt = new Date();
+
+  await request.save();
+
+  res.send("Approved");
 });
 
-// ADMIN FEEDBACK
-router.put("/feedback/:id", async (req, res) => {
-    await Recipe.findByIdAndUpdate(req.params.id, {
-        status: "NEEDS_IMPROVEMENT",
-        adminFeedback: req.body.feedback
-    });
+// REJECT REQUEST
+router.put("/requests/reject/:id", async (req,res)=>{
 
-    res.send("Feedback sent");
+  const request =
+    await RecipeRequest.findById(req.params.id);
+
+  request.status = "REJECTED";
+  request.rejectionReason = req.body.reason;
+  request.reviewedBy = "ADMIN";
+  request.reviewedAt = new Date();
+
+  await request.save();
+
+  res.send("Rejected");
 });
 
 // LIKE
@@ -94,7 +134,7 @@ router.put("/like/:id", async (req, res) => {
 
 
 // RATE
-app.put("/recipes/rate/:id", async (req, res) => {
+router.put("/rate/:id", async (req, res) => {
 
     const { username, rating } = req.body;
 
@@ -156,16 +196,17 @@ router.get("/recommend/:ingredients", async (req, res) => {
     res.json(scored);
 });
 
-// ADMIN - GET PENDING RECIPES
-router.get("/pending", async (req, res) => {
+// ADMIN - GET REQUESTS BY STATUS
+router.get("/requests/:status", async (req,res)=>{
 
-    const recipes = await Recipe.find({
-        status: "PENDING"
-    });
+  const status = req.params.status.toUpperCase();
 
-    res.json(recipes);
+  const requests = await RecipeRequest.find({
+    status
+  }).sort({ createdAt: -1 });
+
+  res.json(requests);
 });
-
 
 
 app.use("/recipes", router);

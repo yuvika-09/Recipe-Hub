@@ -1,52 +1,90 @@
 import { useEffect, useState } from "react";
 import API from "../services/api";
+import RequestCard from "../components/RequestCard";
+
 
 export default function AdminDashboard() {
 
-  const [recipes, setRecipes] = useState([]);
+    const [requests, setRequests] = useState([]);
+    const [activeTab, setActiveTab] = useState("PENDING");
 
-  // LOAD PENDING RECIPES
-  useEffect(() => {
-    API.get("/recipes/pending")
-      .then(res => setRecipes(res.data));
-  }, []);
+    useEffect(() => {
+        fetchRequests();
+    }, [activeTab]);
 
-  // APPROVE RECIPE
-  async function approve(id) {
+    async function fetchRequests() {
+        const res = await API.get(
+            `/recipes/requests/${activeTab}`
+        );
 
-    await API.put(`/recipes/approve/${id}`);
+        setRequests(res.data);
+    }
 
-    // ⭐ remove approved recipe instantly from UI
-    setRecipes(prev =>
-      prev.filter(r => r._id !== id)
-    );
-  }
+    async function approve(id) {
 
-  return (
-    <div>
-      <h2>Admin Panel</h2>
+        await API.put(`/recipes/requests/approve/${id}`);
 
-      {recipes.length === 0 && (
-        <p>No pending recipes</p>
-      )}
+        setRequests(prev =>
+            prev.filter(r => r._id !== id)
+        );
+    }
 
-      {recipes.map(r => (
-        <div
-          key={r._id}
-          style={{
-            border: "1px solid gray",
-            margin: "10px",
-            padding: "10px"
-          }}
-        >
-          <h4>{r.name}</h4>
-          <p>{r.ingredients}</p>
+    async function reject(id) {
 
-          <button onClick={() => approve(r._id)}>
-            Approve
-          </button>
+        const reason = prompt("Reason for rejection:");
+
+        if (!reason) return;
+
+        await API.put(
+            `/recipes/requests/reject/${id}`,
+            { reason }
+        );
+
+        setRequests(prev =>
+            prev.filter(r => r._id !== id)
+        );
+    }
+
+    return (
+        <div className="admin-container">
+
+            <h2>Admin Requests</h2>
+
+            {/* TABS */}
+            <div className="tabs">
+
+                {["PENDING", "APPROVED", "REJECTED"].map(tab => (
+                    <button
+                        key={tab}
+                        className={activeTab === tab ? "active" : ""}
+                        onClick={() => setActiveTab(tab)}
+                    >
+                        {tab}
+                    </button>
+                ))}
+
+            </div>
+
+            {/* REQUEST CARDS */}
+            <div className="request-grid">
+
+                {requests.length === 0 && (
+                    <p>No requests found</p>
+                )}
+
+                {requests.map(r => (
+                    <RequestCard
+                        key={r._id}
+                        request={r}
+                        activeTab={activeTab}
+                        approve={approve}
+                        reject={reject}
+                    />
+                ))}
+
+
+            </div>
+
         </div>
-      ))}
-    </div>
-  );
+    );
 }

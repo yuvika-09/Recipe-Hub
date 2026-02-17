@@ -1,5 +1,5 @@
 {
-  "name": "api-gateway",
+  "name": "auth-service",
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
@@ -9,12 +9,11 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "description": "",
   "dependencies": {
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
-    "http-proxy-middleware": "^3.0.5",
     "mongoose": "^8.23.0"
-  },
-  "description": ""
+  }
 }

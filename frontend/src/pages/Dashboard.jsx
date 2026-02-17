@@ -1,10 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import API from "../services/api";
 import { io } from "socket.io-client";
 import RecipeCard from "../components/RecipeCard";
 import NotificationBell from "../components/NotificationBell";
+import { AuthContext } from "../context/AuthContext";
+
 
 export default function Dashboard() {
+    const { user } = useContext(AuthContext);
 
     const [page, setPage] = useState(1);
 
@@ -75,8 +78,22 @@ export default function Dashboard() {
     }
 
     async function likeRecipe(id) {
-        await API.put(`/recipes/like/${id}`);
+
+        const res = await API.put(
+            `/recipes/like/${id}`,
+            { username: user.username }
+        );
+
+        setFiltered(prev =>
+            prev.map(r =>
+                r._id === id
+                    ? { ...r, likes: res.data.likes }
+                    : r
+            )
+        );
     }
+
+
 
     async function rateRecipe(id, rating) {
         await API.put(`/recipes/rate/${id}`, { rating });

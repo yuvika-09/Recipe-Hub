@@ -17,12 +17,14 @@ app.use("/auth",
 );
 
 /* ---------- RECIPES ---------- */
-app.use("/recipes",
+app.use(
+  "/recipes",
   createProxyMiddleware({
-    target: "http://localhost:5002",
+    target: "http://localhost:5002/recipes",
     changeOrigin: true
   })
 );
+
 
 /* ---------- COMMENTS ---------- */
 app.use("/comments",

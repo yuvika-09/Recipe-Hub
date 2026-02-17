@@ -1,0 +1,33 @@
+version: "3"
+
+services:
+
+  mongodb:
+    image: mongo
+    ports:
+      - "27017:27017"
+
+  redis:
+    image: redis
+
+  api-gateway:
+    build: ./backend/api-gateway
+    ports:
+      - "5000:5000"
+
+  auth-service:
+    build: ./backend/auth-service
+
+  recipe-service:
+    build: ./backend/recipe-service
+
+  comment-service:
+    build: ./backend/comment-service
+
+  notification-service:
+    build: ./backend/notification-service
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:5173"

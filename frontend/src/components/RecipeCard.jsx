@@ -5,25 +5,37 @@ export default function RecipeCard({
 }) {
 
   return (
-    <div className="card p-3 mb-3 shadow">
+    <div className="recipe-card">
 
-      <h4>{recipe.name}</h4>
-      <p>{recipe.ingredients}</p>
-      <p>By: {recipe.createdBy}</p>
+      <div className="image-placeholder">
+        🍽️
+      </div>
 
-      <button
-        className="btn btn-danger me-2"
-        onClick={()=>likeRecipe(recipe._id)}
-      >
-        ❤️ {recipe.likes}
-      </button>
+      <h3>{recipe.name}</h3>
 
-      <button
-        className="btn btn-warning"
-        onClick={()=>rateRecipe(recipe._id,5)}
-      >
-        ⭐ Rate
-      </button>
+      <p className="creator">
+        By {recipe.createdBy || "Chef"}
+      </p>
+
+      <p className="ingredients">
+        {recipe.ingredients}
+      </p>
+
+      <div className="actions">
+        <button
+          className="like-btn"
+          onClick={() => likeRecipe(recipe._id)}
+        >
+          ❤️ {recipe.likes || 0}
+        </button>
+
+        <button
+          className="rate-btn"
+          onClick={() => rateRecipe(recipe._id, 5)}
+        >
+          ⭐ Rate
+        </button>
+      </div>
 
     </div>
   );

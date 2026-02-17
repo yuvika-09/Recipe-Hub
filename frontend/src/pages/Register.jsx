@@ -10,9 +10,12 @@ export default function Register() {
     alert("Registered!");
   }
 
-  return (
-    <div>
-      <h2>Register</h2>
+return (
+  <div className="auth-container">
+
+    <div className="auth-card">
+
+      <h2>Create Account</h2>
 
       <input placeholder="Username"
         onChange={(e)=>setData({...data,username:e.target.value})}
@@ -22,14 +25,18 @@ export default function Register() {
         onChange={(e)=>setData({...data,email:e.target.value})}
       />
 
-      <input placeholder="Password"
-        type="password"
+      <input type="password"
+        placeholder="Password"
         onChange={(e)=>setData({...data,password:e.target.value})}
       />
 
       <button onClick={handleRegister}>
         Register
       </button>
+
     </div>
-  );
+
+  </div>
+);
+
 }

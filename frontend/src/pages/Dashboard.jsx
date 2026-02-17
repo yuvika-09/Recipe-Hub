@@ -100,24 +100,34 @@ export default function Dashboard() {
     }
 
     return (
-        <div>
+        <div className="container">
 
             <input
-                placeholder="Search..."
+                placeholder="🔎 Search delicious recipes..."
                 onChange={searchRecipes}
+                className="search"
             />
 
-            {filtered.map(r => (
-                <RecipeCard
-                    key={r._id}
-                    recipe={r}
-                    likeRecipe={likeRecipe}
-                    rateRecipe={rateRecipe}
-                />
-            ))}
+
+            {filtered.length === 0 && (
+                <p>No recipes yet 🍳</p>
+            )}
+
+            <div className="recipe-grid">
+                {filtered.map(r => (
+                    <RecipeCard
+                        key={r._id}
+                        recipe={r}
+                        likeRecipe={likeRecipe}
+                        rateRecipe={rateRecipe}
+                    />
+                ))}
+            </div>
+
 
             <NotificationBell />
 
         </div>
     );
+
 }

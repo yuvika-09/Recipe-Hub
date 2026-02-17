@@ -3,29 +3,26 @@ import io from "socket.io-client";
 
 export default function NotificationBell() {
 
-  const [notifications, setNotifications] = useState([]);
+    const [notifications, setNotifications] = useState([]);
 
-  useEffect(() => {
+    useEffect(() => {
 
-    const socket = io(import.meta.env.VITE_SOCKET_URL);
+        const socket = io(import.meta.env.VITE_SOCKET_URL);
 
-    socket.on("notification", (msg) => {
-      setNotifications(prev => [msg, ...prev]);
-    });
+        socket.on("notification", (msg) => {
+            setNotifications(prev => [msg, ...prev]);
+        });
 
-    return () => {
-      socket.disconnect();
-    };
+        return () => {
+            socket.disconnect();
+        };
 
-  }, []);
+    }, []);
 
-  return (
-    <div>
-      🔔 {notifications.length}
+    return (
+        <div className="notification-bell">
+            🔔 {notifications.length}
+        </div>
+    );
 
-      {notifications.map((n, i) => (
-        <p key={i}>{n}</p>
-      ))}
-    </div>
-  );
 }

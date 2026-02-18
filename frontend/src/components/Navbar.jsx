@@ -3,8 +3,6 @@ import { useEffect, useState, useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
 import API from "../services/api";
 
-
-
 export default function Navbar() {
     const [pendingCount, setPendingCount] = useState(0);
 

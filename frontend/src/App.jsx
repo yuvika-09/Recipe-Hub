@@ -10,6 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import MyRecipes from "./pages/MyRecipes";
 import AdminDashboard from "./pages/AdminDashboard";
 import AddRecipe from "./pages/AddRecipe";
+import RecipeDetails from "./pages/RecipeDetails";
 
 function App() {
   const { user } = useContext(AuthContext);
@@ -22,6 +23,7 @@ function App() {
         <Route path="/" element={<Dashboard />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/recipe/:id" element={<RecipeDetails />} />
         <Route
           path="/myrecipes"
           element={

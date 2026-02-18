@@ -42,6 +42,40 @@ router.post("/", async (req,res)=>{
   });
 });
 
+// GET SINGLE RECIPE
+router.get("/:id", async (req,res)=>{
+
+  const recipe =
+    await Recipe.findById(req.params.id);
+
+  res.json(recipe);
+});
+
+// UPDATE REQUEST
+router.post("/requests/update", async (req,res)=>{
+
+  const request = await RecipeRequest.create({
+    type: "UPDATE",
+    recipeId: req.body.recipeId,
+    requestedBy: req.body.requestedBy,
+    data: req.body.data
+  });
+
+  res.json(request);
+});
+
+
+// DELETE REQUEST
+router.post("/requests/delete", async (req,res)=>{
+
+  const request = await RecipeRequest.create({
+    type: "DELETE",
+    recipeId: req.body.recipeId,
+    requestedBy: req.body.requestedBy
+  });
+
+  res.json(request);
+});
 
 // GET APPROVED RECIPES
 router.get("/", async (req, res) => {
@@ -54,6 +88,17 @@ router.get("/", async (req, res) => {
 
     res.json(recipes);
 });
+
+// USER - GET MY REQUESTS
+router.get("/requests/user/:username", async (req,res)=>{
+
+  const requests = await RecipeRequest.find({
+    requestedBy: req.params.username
+  }).sort({ createdAt: -1 });
+
+  res.json(requests);
+});
+
 
 // APPROVE REQUEST
 router.put("/requests/approve/:id", async (req,res)=>{

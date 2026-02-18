@@ -34,6 +34,15 @@ app.use("/comments",
   })
 );
 
+/* ---------- NOTIFICATIONS ---------- */
+app.use("/notifications",
+  createProxyMiddleware({
+    target: "http://localhost:4000",
+    changeOrigin: true,
+  })
+);
+
+
 app.listen(process.env.GATEWAY_PORT, () => {
   console.log("API Gateway running");
 });

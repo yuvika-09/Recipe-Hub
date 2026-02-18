@@ -34,13 +34,14 @@ function App() {
         />
 
         <Route
-          path="/admin"
+          path="/admin/*"
           element={
             <ProtectedRoute role="ADMIN" user={user}>
               <AdminDashboard />
             </ProtectedRoute>
           }
         />
+
 
         <Route path="/add" element={<AddRecipe />} />
       </Routes>

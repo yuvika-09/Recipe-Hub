@@ -8,6 +8,7 @@ import { AuthContext } from "../context/AuthContext";
 
 export default function Dashboard() {
     const { user } = useContext(AuthContext);
+console.log("FULL USER:", user);
 
     const [page, setPage] = useState(1);
 
@@ -125,7 +126,6 @@ export default function Dashboard() {
             </div>
 
 
-            <NotificationBell />
 
         </div>
     );

@@ -4,12 +4,13 @@ const bcrypt = require("bcryptjs");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const path = require("path");
+
 require("dotenv").config({
   path: path.resolve(__dirname, "../../.env")
 });
 
-
 const app = express();
+
 app.use(express.json());
 app.use(cors());
 
@@ -21,9 +22,13 @@ const User = mongoose.model("User", {
   password: String
 });
 
-// USER REGISTER
+/* ======================
+   REGISTER
+====================== */
 app.post("/register", async (req, res) => {
-  const hashed = await bcrypt.hash(req.body.password, 10);
+
+  const hashed =
+    await bcrypt.hash(req.body.password, 10);
 
   const user = new User({
     username: req.body.username,
@@ -32,31 +37,64 @@ app.post("/register", async (req, res) => {
   });
 
   await user.save();
+
   res.send("User Registered");
 });
 
-// LOGIN (USER + ADMIN)
+
+/* ======================
+   LOGIN
+====================== */
 app.post("/login", async (req, res) => {
+
   const { email, password } = req.body;
 
-  if (email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD) {
-    const token = jwt.sign({ role: "ADMIN" }, process.env.SECRET);
-    return res.json({ token, role: "ADMIN" });
+  /* ADMIN LOGIN */
+  if (
+    email === process.env.ADMIN_EMAIL &&
+    password === process.env.ADMIN_PASSWORD
+  ) {
+
+    const token = jwt.sign(
+      { role: "ADMIN" },
+      process.env.SECRET
+    );
+
+    return res.json({
+      token,
+      role: "ADMIN",
+      username: "admin"
+    });
   }
 
+  /* USER LOGIN */
   const user = await User.findOne({ email });
-  if (!user) return res.status(404).send("Not found");
 
-  const valid = await bcrypt.compare(password, user.password);
+  if (!user)
+    return res.status(404).send("Not found");
 
-  if (!valid) return res.status(401).send("Wrong password");
+  const valid =
+    await bcrypt.compare(password, user.password);
+
+  if (!valid)
+    return res.status(401).send("Wrong password");
 
   const token = jwt.sign(
-    { id: user._id, role: "USER", username: user.username },
+    {
+      id: user._id,
+      role: "USER",
+      username: user.username
+    },
     process.env.SECRET
   );
 
-  res.json({ token, role: "USER" });
+  res.json({
+    token,
+    role: "USER",
+    username: user.username
+  });
 });
 
-app.listen(process.env.AUTH_PORT, () => console.log("Auth service running"));
+app.listen(process.env.AUTH_PORT, () =>
+  console.log("Auth service running")
+);

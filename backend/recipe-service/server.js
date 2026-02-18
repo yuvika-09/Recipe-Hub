@@ -1,10 +1,15 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
+const path = require("path");
+const redis = require("redis");
+
+require("dotenv").config({
+  path: path.resolve(__dirname, "../../.env")
+});
+
 const Recipe = require("./models/Recipe");
 const RecipeRequest = require("./models/RecipeRequest");
-const path = require("path");
-require("dotenv").config({ path: path.resolve(__dirname, "../../.env") });
 
 const app = express();
 
@@ -13,27 +18,32 @@ app.use(cors());
 
 mongoose.connect(process.env.MONGO_URL_RECIPES);
 
-const redis = require("redis");
+/* ======================
+   REDIS
+====================== */
 const publisher = redis.createClient();
+
 publisher.connect().catch(err =>
-    console.error("Redis connect error:", err)
+  console.error("Redis connect error:", err)
 );
 
 const Saved = mongoose.model("Saved", {
-    userId: String,
-    recipeId: String
+  userId: String,
+  recipeId: String
 });
 
 const router = express.Router();
 
-
-// CREATE RECIPE REQUEST
-router.post("/", async (req,res)=>{
+/* ======================
+   CREATE RECIPE REQUEST
+====================== */
+router.post("/", async (req, res) => {
 
   const request = await RecipeRequest.create({
     type: "CREATE",
     requestedBy: req.body.createdBy,
-    data: req.body
+    data: req.body,
+    status: "PENDING"     // IMPORTANT
   });
 
   res.json({
@@ -42,55 +52,62 @@ router.post("/", async (req,res)=>{
   });
 });
 
-// GET SINGLE RECIPE
-router.get("/:id", async (req,res)=>{
 
-  const recipe =
-    await Recipe.findById(req.params.id);
-
-  res.json(recipe);
-});
-
-// UPDATE REQUEST
-router.post("/requests/update", async (req,res)=>{
+/* ======================
+   UPDATE REQUEST
+====================== */
+router.post("/requests/update", async (req, res) => {
 
   const request = await RecipeRequest.create({
     type: "UPDATE",
     recipeId: req.body.recipeId,
     requestedBy: req.body.requestedBy,
-    data: req.body.data
+    data: req.body.data,
+    status: "PENDING"
   });
 
   res.json(request);
 });
 
 
-// DELETE REQUEST
-router.post("/requests/delete", async (req,res)=>{
+/* ======================
+   DELETE REQUEST
+====================== */
+router.post("/requests/delete", async (req, res) => {
 
   const request = await RecipeRequest.create({
     type: "DELETE",
     recipeId: req.body.recipeId,
-    requestedBy: req.body.requestedBy
+    requestedBy: req.body.requestedBy,
+    status: "PENDING"
   });
 
   res.json(request);
 });
 
-// GET APPROVED RECIPES
+
+/* ======================
+   GET APPROVED RECIPES
+====================== */
 router.get("/", async (req, res) => {
-    const page = Number(req.query.page) || 1;
-    const limit = 5;
 
-    const recipes = await Recipe.find({})
-        .skip((page - 1) * limit)
-        .limit(limit);
+  const page = Number(req.query.page) || 1;
+  const limit = 5;
 
-    res.json(recipes);
+  const recipes = await Recipe.find({
+    status: "APPROVED"
+  })
+    .skip((page - 1) * limit)
+    .limit(limit);
+
+  res.json(recipes);
 });
 
-// USER - GET MY REQUESTS
-router.get("/requests/user/:username", async (req,res)=>{
+
+/* ======================
+   USER REQUEST HISTORY
+====================== */
+router.get("/requests/user/:username", async (req, res) => {
 
   const requests = await RecipeRequest.find({
     requestedBy: req.params.username
@@ -100,29 +117,38 @@ router.get("/requests/user/:username", async (req,res)=>{
 });
 
 
-// APPROVE REQUEST
-router.put("/requests/approve/:id", async (req,res)=>{
+/* ======================
+   APPROVE REQUEST
+====================== */
+router.put("/requests/approve/:id", async (req, res) => {
 
   const request =
     await RecipeRequest.findById(req.params.id);
 
-  if(!request) return res.status(404).send("Not found");
+  if (!request)
+    return res.status(404).send("Not found");
 
-  // CREATE recipe
-  if(request.type === "CREATE"){
-    await Recipe.create(request.data);
+  // CREATE
+  if (request.type === "CREATE") {
+    await Recipe.create({
+      ...request.data,
+      status: "APPROVED"
+    });
   }
 
-  // UPDATE recipe
-  if(request.type === "UPDATE"){
+  // UPDATE
+  if (request.type === "UPDATE") {
     await Recipe.findByIdAndUpdate(
       request.recipeId,
-      request.data
+      {
+        ...request.data,
+        status: "APPROVED"
+      }
     );
   }
 
-  // DELETE recipe
-  if(request.type === "DELETE"){
+  // DELETE
+  if (request.type === "DELETE") {
     await Recipe.findByIdAndDelete(
       request.recipeId
     );
@@ -137,8 +163,11 @@ router.put("/requests/approve/:id", async (req,res)=>{
   res.send("Approved");
 });
 
-// REJECT REQUEST
-router.put("/requests/reject/:id", async (req,res)=>{
+
+/* ======================
+   REJECT REQUEST
+====================== */
+router.put("/requests/reject/:id", async (req, res) => {
 
   const request =
     await RecipeRequest.findById(req.params.id);
@@ -153,109 +182,152 @@ router.put("/requests/reject/:id", async (req,res)=>{
   res.send("Rejected");
 });
 
-// LIKE
+
+/* ======================
+   LIKE
+====================== */
 router.put("/like/:id", async (req, res) => {
 
-    const { username } = req.body;
+  const { username } = req.body;
 
-    const recipe = await Recipe.findById(req.params.id);
+  const recipe =
+    await Recipe.findById(req.params.id);
 
-    const index = recipe.likedBy.indexOf(username);
+  if (!recipe)
+    return res.status(404).send("Recipe not found");
 
-    if (index === -1) {
-        // LIKE
-        recipe.likedBy.push(username);
-    } else {
-        // UNLIKE
-        recipe.likedBy.splice(index, 1);
-    }
+  const index =
+    recipe.likedBy.indexOf(username);
 
-    await recipe.save();
+  if (index === -1) {
+    recipe.likedBy.push(username);
+  } else {
+    recipe.likedBy.splice(index, 1);
+  }
 
-    res.json({
-        likes: recipe.likedBy.length
-    });
+  await recipe.save();
+
+  res.json({
+    likes: recipe.likedBy.length
+  });
 });
 
 
-// RATE
+/* ======================
+   RATE
+====================== */
 router.put("/rate/:id", async (req, res) => {
 
-    const { username, rating } = req.body;
+  const { username, rating } = req.body;
 
-    const recipe = await Recipe.findById(req.params.id);
+  const recipe =
+    await Recipe.findById(req.params.id);
 
-    const existing =
-        recipe.ratings.find(r => r.username === username);
+  const existing =
+    recipe.ratings.find(
+      r => r.username === username
+    );
 
-    if (existing) {
-        // update rating
-        existing.value = rating;
-    } else {
-        // add rating
-        recipe.ratings.push({ username, value: rating });
-    }
+  if (existing) {
+    existing.value = rating;
+  } else {
+    recipe.ratings.push({
+      username,
+      value: rating
+    });
+  }
 
-    await recipe.save();
+  await recipe.save();
 
-    res.send("Rated");
+  res.send("Rated");
 });
 
 
-// SAVE RECIPE
+/* ======================
+   SAVE RECIPE
+====================== */
 router.post("/save", async (req, res) => {
-    await Saved.create(req.body);
-    res.send("Recipe saved");
+  await Saved.create(req.body);
+  res.send("Recipe saved");
 });
 
-// RECOMMEND
+
+/* ======================
+   RECOMMEND
+====================== */
 router.get("/recommend/:ingredients", async (req, res) => {
-    const userIngredients = req.params.ingredients.split(",");
 
-    const recipes = await Recipe.find({
-        status: "APPROVED"
+  const userIngredients =
+    req.params.ingredients
+      .toLowerCase()
+      .split(",")
+      .map(i => i.trim());
+
+  const recipes =
+    await Recipe.find({ status: "APPROVED" });
+
+  const scored = recipes.map(r => {
+
+    const rawIngredients =
+      Array.isArray(r.ingredients)
+        ? r.ingredients.join(",")
+        : String(r.ingredients || "");
+
+    const recipeIngredients =
+      rawIngredients
+        .toLowerCase()
+        .split(",")
+        .map(s => s.trim())
+        .filter(Boolean);
+
+    let score = 0;
+
+    userIngredients.forEach(i => {
+      if (recipeIngredients.includes(i))
+        score++;
     });
 
-    const scored = recipes.map(r => {
-        const rawIngredients = Array.isArray(r.ingredients)
-            ? r.ingredients.join(",")
-            : String(r.ingredients || "");
+    return { ...r._doc, score };
+  });
 
-        const recipeIngredients =
-            rawIngredients.toLowerCase()
-                .split(",")
-                .map(s => s.trim())
-                .filter(Boolean);
+  scored.sort((a, b) => b.score - a.score);
 
-        let score = 0;
-
-        userIngredients.forEach(i => {
-            if (recipeIngredients.includes(i)) score++;
-        });
-
-        return { ...r._doc, score };
-    });
-
-    scored.sort((a, b) => b.score - a.score);
-
-    res.json(scored);
+  res.json(scored);
 });
 
-// ADMIN - GET REQUESTS BY STATUS
+
+/* ======================
+   ADMIN REQUESTS
+====================== */
 router.get("/requests/:status", async (req,res)=>{
 
-  const status = req.params.status.toUpperCase();
+  const status =
+    req.params.status.toUpperCase();
 
-  const requests = await RecipeRequest.find({
-    status
-  }).sort({ createdAt: -1 });
+  const requests =
+    await RecipeRequest.find({
+      status: { $regex: `^${status}$`, $options: "i" }
+    }).sort({ createdAt:-1 });
 
   res.json(requests);
+});
+
+
+/* ======================
+   GET SINGLE RECIPE
+   (KEEP LAST!!)
+====================== */
+router.get("/:id", async (req, res) => {
+
+  const recipe =
+    await Recipe.findById(req.params.id);
+
+  res.json(recipe);
 });
 
 
 app.use("/recipes", router);
 
 app.listen(process.env.RECIPE_PORT, () =>
-    console.log("Recipe service running")
+  console.log("Recipe service running")
 );

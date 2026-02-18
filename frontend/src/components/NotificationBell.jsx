@@ -1,29 +1,73 @@
 import { useEffect, useState, useContext } from "react";
-import { AuthContext } from "../context/AuthContext";
 import io from "socket.io-client";
+import API from "../services/api";
+import { AuthContext } from "../context/AuthContext";
 
 export default function NotificationBell() {
 
-    const [notifications, setNotifications] = useState([]);
+  const { user } =
+    useContext(AuthContext);
 
-    useEffect(() => {
+  const [notifications, setNotifications] =
+    useState([]);
 
-        const socket = io(import.meta.env.VITE_SOCKET_URL);
+  const [open, setOpen] = useState(false);
 
-        socket.on("notification", (msg) => {
-            setNotifications(prev => [msg, ...prev]);
-        });
+  const username = user?.username;
 
-        return () => {
-            socket.disconnect();
-        };
+  useEffect(() => {
 
-    }, []);
+    if (!username) return;
 
-    return (
-        <div className="notification-bell">
-            🔔 {notifications.length}
+    API.get(`/notifications/${username}`)
+      .then(res => setNotifications(res.data));
+
+    const socket =
+      io(import.meta.env.VITE_SOCKET_URL);
+
+    socket.emit("join", username);
+
+    socket.on("notification", (msg) => {
+      if (msg.user === username) {
+        setNotifications(prev => [msg, ...prev]);
+      }
+    });
+
+    return () => socket.disconnect();
+
+  }, [username]);
+
+  if (!username) return null;
+
+  const unreadCount =
+    notifications.filter(n => !n.read).length;
+
+  return (
+    <div className="notification-bell">
+
+      <div
+        onClick={() => setOpen(!open)}
+        style={{ cursor: "pointer" }}
+      >
+        🔔 {unreadCount}
+      </div>
+
+      {open && (
+        <div className="notif-dropdown">
+
+          {notifications.length === 0 && (
+            <p>No notifications</p>
+          )}
+
+          {notifications.map(n => (
+            <p key={n._id}>
+              {n.message}
+            </p>
+          ))}
+
         </div>
-    );
+      )}
 
+    </div>
+  );
 }

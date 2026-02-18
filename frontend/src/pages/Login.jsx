@@ -1,55 +1,76 @@
 import { useState, useContext } from "react";
-import axios from "axios";
-import { AuthContext } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import API from "../services/api";
+import { AuthContext } from "../context/AuthContext";
 
 export default function Login() {
 
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const { login } = useContext(AuthContext);
-    const navigate = useNavigate();
+  const { login } = useContext(AuthContext);
+  const navigate = useNavigate();
 
-    async function handleLogin() {
+  const [form, setForm] = useState({
+    email: "",
+    password: ""
+  });
 
-        const res = await axios.post(
-            "http://localhost:5001/login",
-            { email, password }
-        );
+  function handleChange(e) {
+    setForm({
+      ...form,
+      [e.target.name]: e.target.value
+    });
+  }
 
-        login(res.data);
+  async function handleLogin(e) {
+    e.preventDefault();
 
-        if (res.data.role === "ADMIN")
-            navigate("/admin");
-        else
-            navigate("/");
+    try {
+
+      const res =
+        await API.post("/auth/login", form);
+
+      console.log("LOGIN RESPONSE:", res.data);
+
+      login(res.data);
+
+      navigate("/");
+
+    } catch (err) {
+      console.error(err);
+      alert("Invalid credentials");
     }
+  }
 
-    return (
-        <div className="auth-container">
+  return (
+    <div className="login-container">
 
-            <div className="auth-card">
+      <h2>Login</h2>
 
-                <h2>Login</h2>
+      <form onSubmit={handleLogin}>
 
-                <input
-                    placeholder="Email"
-                    onChange={(e) => setEmail(e.target.value)}
-                />
+        <input
+          type="email"
+          name="email"
+          placeholder="Email"
+          value={form.email}
+          onChange={handleChange}
+          required
+        />
 
-                <input
-                    type="password"
-                    placeholder="Password"
-                    onChange={(e) => setPassword(e.target.value)}
-                />
+        <input
+          type="password"
+          name="password"
+          placeholder="Password"
+          value={form.password}
+          onChange={handleChange}
+          required
+        />
 
-                <button onClick={handleLogin}>
-                    Login
-                </button>
+        <button type="submit">
+          Login
+        </button>
 
-            </div>
+      </form>
 
-        </div>
-    );
-
+    </div>
+  );
 }

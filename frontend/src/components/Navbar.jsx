@@ -1,56 +1,68 @@
-import { Link } from "react-router-dom";
-import { useEffect, useState, useContext } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
-import API from "../services/api";
+import NotificationBell from "./NotificationBell";
 
 export default function Navbar() {
-    const [pendingCount, setPendingCount] = useState(0);
 
-    const { user } = useContext(AuthContext);
+  const { user, logout, loading} = useContext(AuthContext);
+  const navigate = useNavigate();
 
-    useEffect(() => {
-
-        if (user?.role !== "ADMIN") return;
-
-        API.get("/recipes/requests/PENDING")
-            .then(res => setPendingCount(res.data.length))
-            .catch(console.error);
-
-    }, [user]);
+  console.log("NAV USER:", user);
 
 
+  function handleLogout() {
+    logout();
+    navigate("/login");
+  }
 
+  /* KEEP NAV STRUCTURE EVEN IF NO USER */
+  if (!user) return null;
 
-    return (
-        <nav className="nav">
+  const role = user?.role || "";
+if (loading) return null;
 
-            <h2 className="logo">🍳 RecipeHub</h2>
+  return (
+    <nav className="nav">
 
-            <div className="nav-links">
+      {/* CLICKABLE LOGO */}
+      <Link to="/" className="logo" style={{ textDecoration: "none" }}>
+        🍳 RecipeHub
+      </Link>
 
-                <Link to="/">Home</Link>
+      <div className="nav-links">
 
-                {/* USER LINKS */}
-                {user?.role === "USER" && (
-                    <>
-                        <Link to="/add">Add Recipe</Link>
-                        <Link to="/myrecipes">My Recipes</Link>
-                    </>
-                )}
+        {/* USER NAVBAR */}
+        {role === "USER" && (
+          <>
+            <Link to="/">Home</Link>
+            <Link to="/add">Add Recipe</Link>
+            <Link to="/myrecipes">My Recipes</Link>
 
-                {/* ADMIN LINKS */}
-                {user?.role === "ADMIN" && (
-                    <Link to="/admin">
-                        Requests
-                        {pendingCount > 0 && (
-                            <span className="badge">{pendingCount}</span>
-                        )}
-                    </Link>
-                )}
+            {/* 🔔 ONLY USER */}
+            <NotificationBell />
+          </>
+        )}
 
-            </div>
+        {/* ADMIN NAVBAR */}
+        {role === "ADMIN" && (
+          <>
+            <Link to="/admin/dashboard">Dashboard</Link>
+            <Link to="/admin/requests">Requests</Link>
+            <Link to="/users">Users</Link>
+          </>
+        )}
 
+        {/* LOGOUT */}
+        <button
+          className="logout-btn"
+          onClick={handleLogout}
+        >
+          Logout
+        </button>
 
-        </nav>
-    );
+      </div>
+
+    </nav>
+  );
 }

@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 export default function RecipeCard({
   recipe,
@@ -6,7 +6,6 @@ export default function RecipeCard({
   rateRecipe
 }) {
   const navigate = useNavigate();
-
   const avgRating = Number(recipe.avgRating || 0).toFixed(1);
 
   return (
@@ -17,15 +16,23 @@ export default function RecipeCard({
       tabIndex={0}
       onKeyDown={(e) => e.key === "Enter" && navigate(`/recipe/${recipe._id}`)}
     >
-
-      <div className="image-placeholder">
-        🍽️
-      </div>
+      {recipe.imageUrl ? (
+        <img className="recipe-image" src={recipe.imageUrl} alt={recipe.name} />
+      ) : (
+        <div className="image-placeholder">🍽️</div>
+      )}
 
       <h3>{recipe.name}</h3>
 
       <p className="creator">
-        By {recipe.createdBy || "Chef"}
+        By{" "}
+        <Link
+          to={`/users/${recipe.createdBy}`}
+          className="author-link"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {recipe.createdBy || "Chef"}
+        </Link>
       </p>
 
       <p className="ingredients">

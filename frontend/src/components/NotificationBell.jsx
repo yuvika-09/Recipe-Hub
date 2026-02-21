@@ -5,26 +5,36 @@ import { AuthContext } from "../context/AuthContextObject";
 
 export default function NotificationBell() {
 
-  const { user } =
-    useContext(AuthContext);
-
-  const [notifications, setNotifications] =
-    useState([]);
-
+  const { user } = useContext(AuthContext);
+  const [notifications, setNotifications] = useState([]);
   const [open, setOpen] = useState(false);
-
   const username = user?.username;
 
   useEffect(() => {
-
     if (!username) return;
 
+    const storageKey = `notifications_${username}`;
+    const localData = localStorage.getItem(storageKey);
+
+    if (localData) {
+      try {
+        const parsed = JSON.parse(localData);
+        setTimeout(() => setNotifications(parsed), 0);
+      } catch {
+        // ignore corrupted local cache
+      }
+    }
+
     API.get(`/notifications/${username}`)
-      .then(res => setNotifications(res.data));
+      .then(res => {
+        setNotifications((prev) => {
+          const map = new Map();
+          [...prev, ...res.data].forEach((n) => map.set(n._id || `${n.message}-${n.createdAt}`, n));
+          return Array.from(map.values()).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        });
+      });
 
-    const socket =
-      io(import.meta.env.VITE_SOCKET_URL);
-
+    const socket = io(import.meta.env.VITE_SOCKET_URL);
     socket.emit("join", username);
 
     socket.on("notification", (msg) => {
@@ -34,13 +44,16 @@ export default function NotificationBell() {
     });
 
     return () => socket.disconnect();
-
   }, [username]);
+
+  useEffect(() => {
+    if (!username) return;
+    localStorage.setItem(`notifications_${username}`, JSON.stringify(notifications));
+  }, [notifications, username]);
 
   if (!username) return null;
 
-  const unreadCount =
-    notifications.filter(n => !n.read).length;
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   async function markAllRead() {
     await API.put(`/notifications/read-all/${username}`);
@@ -54,7 +67,6 @@ export default function NotificationBell() {
 
   return (
     <div className="notification-bell">
-
       <button
         className="bell-trigger"
         onClick={() => setOpen(!open)}
@@ -75,9 +87,9 @@ export default function NotificationBell() {
 
           {notifications.map(n => (
             <button
-              key={n._id}
+              key={n._id || `${n.message}-${n.createdAt}`}
               className={`notif-item ${n.read ? "" : "unread"}`}
-              onClick={() => markSingleRead(n._id)}
+              onClick={() => n._id && markSingleRead(n._id)}
             >
               <span>{n.message}</span>
             </button>

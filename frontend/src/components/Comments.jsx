@@ -1,41 +1,52 @@
-import { useEffect, useState } from "react";
-import axios from "axios";
+import { useEffect, useState, useContext } from "react";
+import API from "../services/api";
+import { AuthContext } from "../context/AuthContextObject";
 
 export default function Comments({ recipeId }) {
 
+  const { user } = useContext(AuthContext);
   const [comments, setComments] = useState([]);
   const [text, setText] = useState("");
 
   useEffect(() => {
-    axios.get(`http://localhost:5003/comments/${recipeId}`)
+    API.get(`/comments/${recipeId}`)
       .then(res => setComments(res.data));
   }, [recipeId]);
 
   async function addComment() {
-    await axios.post("http://localhost:5003/comments", {
+    const value = text.trim();
+    if (!value) return;
+
+    const res = await API.post("/comments", {
       recipeId,
-      username: "User",
-      text
+      username: user?.username || "Anonymous",
+      text: value
     });
 
-    setComments([...comments, { text }]);
+    setComments(prev => [...prev, res.data]);
     setText("");
   }
 
   return (
-    <div>
+    <div className="comments-box">
       <h4>Comments</h4>
 
-      {comments.map((c,i)=>(
-        <p key={i}>{c.text}</p>
+      {comments.length === 0 && <p>No comments yet.</p>}
+
+      {comments.map((c) => (
+        <div key={c._id || `${c.username}-${c.text}`} className="comment-item">
+          <strong>{c.username}</strong>
+          <p>{c.text}</p>
+        </div>
       ))}
 
-      <input
+      <textarea
         value={text}
-        onChange={(e)=>setText(e.target.value)}
+        placeholder="Write a comment..."
+        onChange={(e) => setText(e.target.value)}
       />
 
-      <button onClick={addComment}>Comment</button>
+      <button className="approve-btn" onClick={addComment}>Comment</button>
     </div>
   );
 }

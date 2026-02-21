@@ -96,6 +96,31 @@ app.get("/users", async (_req, res) => {
   res.json(users);
 });
 
+
+app.get("/users/:username", async (req, res) => {
+  const user = await User.findOne({ username: req.params.username }, { password: 0 });
+
+  if (!user) {
+    return res.status(404).send("User not found");
+  }
+
+  res.json(user);
+});
+
+app.delete("/users/:username", async (req, res) => {
+  if (req.params.username === "admin") {
+    return res.status(400).send("Admin account cannot be deleted");
+  }
+
+  const deleted = await User.findOneAndDelete({ username: req.params.username });
+
+  if (!deleted) {
+    return res.status(404).send("User not found");
+  }
+
+  res.send("User deleted");
+});
+
 app.patch("/users/:username", async (req, res) => {
   const existing = await User.findOne({ username: req.params.username });
 

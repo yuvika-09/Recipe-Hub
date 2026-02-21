@@ -11,6 +11,9 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("PENDING");
   const [rejectingId, setRejectingId] = useState(null);
   const [reason, setReason] = useState("");
+  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [selectedUserRecipes, setSelectedUserRecipes] = useState([]);
 
   const isUsersPage = location.pathname.includes("/admin/users");
   const isRequestsPage = location.pathname.includes("/admin/requests");
@@ -21,19 +24,28 @@ export default function AdminDashboard() {
     setRequests(res.data);
   }, [activeTab]);
 
-  useEffect(() => {
-    if (isUsersPage) {
-      API.get("/auth/users").then(res => setUsers(res.data));
-      return;
-    }
+  const fetchUsers = useCallback(async () => {
+    const res = await API.get("/auth/users");
+    setUsers(res.data);
+  }, []);
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchRequests();
-  }, [fetchRequests, isUsersPage]);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (isUsersPage) {
+        fetchUsers();
+        return;
+      }
+
+      fetchRequests();
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, [fetchRequests, fetchUsers, isUsersPage]);
 
   async function approve(id) {
     await API.put(`/recipes/requests/approve/${id}`);
     setRequests(prev => prev.filter(r => r._id !== id));
+    if (selectedRequest?._id === id) setSelectedRequest(null);
   }
 
   async function submitReject() {
@@ -46,6 +58,25 @@ export default function AdminDashboard() {
     setReason("");
   }
 
+  async function openUserDetails(username) {
+    const [userRes, recipeRes] = await Promise.all([
+      API.get(`/auth/users/${username}`),
+      API.get(`/recipes/user/${username}`)
+    ]);
+
+    setSelectedUser(userRes.data);
+    setSelectedUserRecipes(recipeRes.data);
+  }
+
+  async function deleteUser(username) {
+    const ok = window.confirm(`Delete account for ${username}?`);
+    if (!ok) return;
+
+    await API.delete(`/auth/users/${username}`);
+    setSelectedUser(null);
+    fetchUsers();
+  }
+
   if (isUsersPage) {
     return (
       <div className="admin-container">
@@ -55,9 +86,35 @@ export default function AdminDashboard() {
             <div className="request-card" key={u._id}>
               <h3>{u.username}</h3>
               <p>{u.email}</p>
+
+              <div className="actions">
+                <button className="rate-btn" onClick={() => openUserDetails(u.username)}>
+                  View Account
+                </button>
+                <button className="reject-btn" onClick={() => deleteUser(u.username)}>
+                  Delete User
+                </button>
+              </div>
             </div>
           ))}
         </div>
+
+        {selectedUser && (
+          <div className="reject-modal">
+            <div className="reject-modal-card">
+              <h3>{selectedUser.username}</h3>
+              <p>{selectedUser.email}</p>
+              <h4 style={{ marginTop: "12px" }}>Recipes Added</h4>
+              {selectedUserRecipes.length === 0 && <p>No approved recipes yet.</p>}
+              {selectedUserRecipes.map(r => (
+                <p key={r._id}>• {r.name}</p>
+              ))}
+              <div className="actions">
+                <button className="rate-btn" onClick={() => setSelectedUser(null)}>Close</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -107,10 +164,40 @@ export default function AdminDashboard() {
             activeTab={activeTab}
             approve={approve}
             reject={(id) => setRejectingId(id)}
+            view={(req) => setSelectedRequest(req)}
           />
         ))}
 
       </div>
+
+      {selectedRequest && (
+        <div className="reject-modal">
+          <div className="reject-modal-card">
+            <h3>Request Review</h3>
+            <p><b>Type:</b> {selectedRequest.type}</p>
+            <p><b>By:</b> {selectedRequest.requestedBy}</p>
+            <p><b>Name:</b> {selectedRequest.data?.name || "-"}</p>
+            {selectedRequest.data?.imageUrl && (
+              <img className="details-image" src={selectedRequest.data.imageUrl} alt="Requested recipe" />
+            )}
+            <p><b>Ingredients:</b> {Array.isArray(selectedRequest.data?.ingredients)
+              ? selectedRequest.data.ingredients.join(", ")
+              : selectedRequest.data?.ingredients || "-"}</p>
+            <p><b>Steps:</b> {selectedRequest.data?.steps || "-"}</p>
+            {selectedRequest.deleteReason && <p><b>Delete reason:</b> {selectedRequest.deleteReason}</p>}
+
+            <div className="actions">
+              {selectedRequest.status === "PENDING" && (
+                <>
+                  <button className="approve-btn" onClick={() => approve(selectedRequest._id)}>Approve</button>
+                  <button className="reject-btn" onClick={() => setRejectingId(selectedRequest._id)}>Reject</button>
+                </>
+              )}
+              <button className="rate-btn" onClick={() => setSelectedRequest(null)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {rejectingId && (
         <div className="reject-modal">

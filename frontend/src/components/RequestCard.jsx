@@ -2,7 +2,8 @@ export default function RequestCard({
   request,
   activeTab,
   approve,
-  reject
+  reject,
+  view
 }) {
 
   return (
@@ -17,29 +18,44 @@ export default function RequestCard({
         By: <b>{request.requestedBy}</b>
       </p>
 
-      {request.rejectionReason && (
+      {request.deleteReason && (
         <p className="reject-reason">
-          Reason: {request.rejectionReason}
+          Delete reason: {request.deleteReason}
         </p>
       )}
 
-      {activeTab === "PENDING" && (
-        <div className="actions">
-          <button
-            className="approve-btn"
-            onClick={() => approve(request._id)}
-          >
-            Approve
-          </button>
-
-          <button
-            className="reject-btn"
-            onClick={() => reject(request._id)}
-          >
-            Reject
-          </button>
-        </div>
+      {request.rejectionReason && (
+        <p className="reject-reason">
+          Rejection reason: {request.rejectionReason}
+        </p>
       )}
+
+      <div className="actions">
+        <button
+          className="rate-btn"
+          onClick={() => view(request)}
+        >
+          View Request
+        </button>
+
+        {activeTab === "PENDING" && (
+          <>
+            <button
+              className="approve-btn"
+              onClick={() => approve(request._id)}
+            >
+              Approve
+            </button>
+
+            <button
+              className="reject-btn"
+              onClick={() => reject(request._id)}
+            >
+              Reject
+            </button>
+          </>
+        )}
+      </div>
 
     </div>
   );

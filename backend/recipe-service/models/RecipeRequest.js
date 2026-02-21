@@ -18,6 +18,8 @@ const RecipeRequestSchema = new mongoose.Schema({
 
   data: Object,
 
+  deleteReason: String,
+
   status: {
     type: String,
     enum: ["PENDING", "APPROVED", "REJECTED"],

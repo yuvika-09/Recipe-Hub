@@ -53,7 +53,8 @@ button {
   font-weight: 500;
 }
 
-.nav-links a:hover {
+.nav-links a:hover,
+.author-link:hover {
   color: #ef4444;
 }
 
@@ -100,12 +101,27 @@ button {
 
 .image-placeholder {
   background: #ffe8e8;
-  height: 140px;
+  height: 160px;
   border-radius: 10px;
   display: flex;
   justify-content: center;
   align-items: center;
   font-size: 42px;
+}
+
+.recipe-image,
+.details-image {
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+  border-radius: 10px;
+  margin-bottom: 10px;
+}
+
+.author-link {
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 600;
 }
 
 .creator {
@@ -128,6 +144,7 @@ button {
   margin-top: 12px;
   display: flex;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
 .like-btn,
@@ -233,17 +250,9 @@ button {
   font-weight: bold;
 }
 
-.PENDING {
-  color: #d97706;
-}
-
-.APPROVED {
-  color: #16a34a;
-}
-
-.REJECTED {
-  color: #dc2626;
-}
+.PENDING { color: #d97706; }
+.APPROVED { color: #16a34a; }
+.REJECTED { color: #dc2626; }
 
 .admin-container {
   width: 92%;
@@ -257,14 +266,17 @@ button {
   background: rgba(0, 0, 0, 0.5);
   display: grid;
   place-items: center;
+  z-index: 50;
 }
 
 .reject-modal-card {
   width: 90%;
-  max-width: 500px;
+  max-width: 620px;
   background: white;
   border-radius: 12px;
   padding: 16px;
+  max-height: 85vh;
+  overflow: auto;
 }
 
 textarea,
@@ -285,4 +297,26 @@ input {
 
 .details-page textarea {
   min-height: 120px;
+}
+
+.recipe-steps-text {
+  white-space: pre-wrap;
+  line-height: 1.6;
+}
+
+.comments-box {
+  margin-top: 24px;
+  background: #fff;
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.07);
+}
+
+.comment-item {
+  border-bottom: 1px solid #e5e7eb;
+  padding: 8px 0;
+}
+
+.comment-item p {
+  margin-top: 4px;
 }

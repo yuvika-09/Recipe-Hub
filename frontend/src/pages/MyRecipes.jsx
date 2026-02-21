@@ -32,9 +32,16 @@ export default function MyRecipes() {
   }, [loadData]);
 
   async function requestDelete(recipeId) {
+    const reason = prompt("Reason for deletion request:");
+
+    if (!reason || !reason.trim()) {
+      return;
+    }
+
     await API.post("/recipes/requests/delete", {
       recipeId,
-      requestedBy: user.username
+      requestedBy: user.username,
+      reason
     });
 
     alert("Delete request sent to admin");

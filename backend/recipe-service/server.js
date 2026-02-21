@@ -95,10 +95,17 @@ router.post("/requests/update", async (req, res) => {
 });
 
 router.post("/requests/delete", async (req, res) => {
+  const reason = String(req.body.reason || "").trim();
+
+  if (!reason) {
+    return res.status(400).send("Delete reason is required");
+  }
+
   const request = await RecipeRequest.create({
     type: "DELETE",
     recipeId: req.body.recipeId,
     requestedBy: req.body.requestedBy,
+    deleteReason: reason,
     status: "PENDING"
   });
 

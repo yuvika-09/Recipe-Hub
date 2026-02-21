@@ -9,7 +9,8 @@ export default function AddRecipe() {
   const [data, setData] = useState({
     name: "",
     ingredients: "",
-    steps: ""
+    steps: "",
+    imageUrl: ""
   });
 
   async function handleSubmit(e) {
@@ -25,7 +26,7 @@ export default function AddRecipe() {
     });
 
     alert("Recipe submitted for approval");
-    setData({ name: "", ingredients: "", steps: "" });
+    setData({ name: "", ingredients: "", steps: "", imageUrl: "" });
   }
 
   return (
@@ -38,6 +39,12 @@ export default function AddRecipe() {
           value={data.name}
           onChange={(e) => setData({ ...data, name: e.target.value })}
           required
+        />
+
+        <input
+          placeholder="Recipe Image URL"
+          value={data.imageUrl}
+          onChange={(e) => setData({ ...data, imageUrl: e.target.value })}
         />
 
         <textarea

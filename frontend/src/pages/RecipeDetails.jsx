@@ -1,7 +1,8 @@
 import { useEffect, useState, useContext } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import API from "../services/api";
 import { AuthContext } from "../context/AuthContextObject";
+import Comments from "../components/Comments";
 
 export default function RecipeDetails() {
 
@@ -38,9 +39,16 @@ export default function RecipeDetails() {
   }
 
   async function requestDelete() {
+    const reason = prompt("Reason for deletion request:");
+
+    if (!reason || !reason.trim()) {
+      return;
+    }
+
     await API.post("/recipes/requests/delete", {
       recipeId: id,
-      requestedBy: user.username
+      requestedBy: user.username,
+      reason
     });
 
     alert("Delete request sent");
@@ -48,27 +56,44 @@ export default function RecipeDetails() {
 
   if (!recipe || !draft) return <p>Loading...</p>;
 
+  const isOwner = user?.username === recipe.createdBy;
+
   return (
     <div className="container details-page">
 
       <h2>{recipe.name}</h2>
-      <p>By: {recipe.createdBy}</p>
+      <p>
+        By{" "}
+        <Link className="author-link" to={`/users/${recipe.createdBy}`}>
+          {recipe.createdBy}
+        </Link>
+      </p>
+
+      {recipe.imageUrl && (
+        <img className="details-image" src={recipe.imageUrl} alt={recipe.name} />
+      )}
 
       <h4>Ingredients</h4>
-      <textarea
-        value={Array.isArray(draft.ingredients) ? draft.ingredients.join(", ") : draft.ingredients}
-        onChange={(e) => setDraft({ ...draft, ingredients: e.target.value })}
-        disabled={user?.username !== recipe.createdBy}
-      />
+      {isOwner ? (
+        <textarea
+          value={Array.isArray(draft.ingredients) ? draft.ingredients.join(", ") : draft.ingredients}
+          onChange={(e) => setDraft({ ...draft, ingredients: e.target.value })}
+        />
+      ) : (
+        <p>{Array.isArray(recipe.ingredients) ? recipe.ingredients.join(", ") : recipe.ingredients}</p>
+      )}
 
       <h4>Steps</h4>
-      <textarea
-        value={draft.steps}
-        onChange={(e) => setDraft({ ...draft, steps: e.target.value })}
-        disabled={user?.username !== recipe.createdBy}
-      />
+      {isOwner ? (
+        <textarea
+          value={draft.steps}
+          onChange={(e) => setDraft({ ...draft, steps: e.target.value })}
+        />
+      ) : (
+        <p className="recipe-steps-text">{recipe.steps}</p>
+      )}
 
-      {user?.username === recipe.createdBy && (
+      {isOwner && (
         <div className="actions" style={{ marginTop: "20px" }}>
           <button className="approve-btn" onClick={requestUpdate}>
             Request Update
@@ -83,6 +108,8 @@ export default function RecipeDetails() {
 
         </div>
       )}
+
+      <Comments recipeId={id} />
 
     </div>
   );

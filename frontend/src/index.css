@@ -430,3 +430,21 @@ input {
 .insight-card.pending { border-left: 5px solid #d97706; }
 .insight-card.approved { border-left: 5px solid #16a34a; }
 .insight-card.rejected { border-left: 5px solid #dc2626; }
+
+
+.insight-card small {
+  color: #6b7280;
+}
+
+.admin-container h2 {
+  margin-bottom: 8px;
+}
+
+.request-card h4 {
+  margin-bottom: 6px;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

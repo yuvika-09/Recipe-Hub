@@ -11,16 +11,15 @@ app.use(cors());
 /* ---------- AUTH ---------- */
 app.use("/auth",
   createProxyMiddleware({
-    target: "http://localhost:5001",
+    target: `http://localhost:${process.env.AUTH_PORT}`,
     changeOrigin: true,
   })
 );
 
 /* ---------- RECIPES ---------- */
-app.use(
-  "/recipes",
+app.use("/recipes",
   createProxyMiddleware({
-    target: "http://localhost:5002/recipes",
+    target: `http://localhost:${process.env.RECIPE_PORT}/recipes`,
     changeOrigin: true
   })
 );
@@ -29,7 +28,7 @@ app.use(
 /* ---------- COMMENTS ---------- */
 app.use("/comments",
   createProxyMiddleware({
-    target: "http://localhost:5003",
+    target: `http://localhost:${process.env.COMMENT_PORT}/comments`,
     changeOrigin: true,
   })
 );
@@ -37,7 +36,7 @@ app.use("/comments",
 /* ---------- NOTIFICATIONS ---------- */
 app.use("/notifications",
   createProxyMiddleware({
-    target: "http://localhost:4000",
+    target: `http://localhost:${process.env.NOTIFY_PORT}/notifications`,
     changeOrigin: true,
   })
 );

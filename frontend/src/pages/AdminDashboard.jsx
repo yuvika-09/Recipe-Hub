@@ -20,6 +20,10 @@ export default function AdminDashboard() {
     rejectedRequests: 0,
     usersCount: 0
   });
+  const [approvedRecipes, setApprovedRecipes] = useState([]);
+  const [scheduleTarget, setScheduleTarget] = useState(null);
+  const [deleteReason, setDeleteReason] = useState("");
+  const [deleteHours, setDeleteHours] = useState(24);
 
   const isUsersPage = location.pathname.includes("/admin/users");
   const isRequestsPage = location.pathname.includes("/admin/requests");
@@ -36,15 +40,18 @@ export default function AdminDashboard() {
   }, []);
 
   const fetchStats = useCallback(async () => {
-    const [statsRes, usersRes] = await Promise.all([
+    const [statsRes, usersRes, approvedRes] = await Promise.all([
       API.get("/recipes/stats/dashboard"),
-      API.get("/auth/users")
+      API.get("/auth/users"),
+      API.get("/recipes/admin/approved")
     ]);
 
     setStats({
       ...statsRes.data,
       usersCount: usersRes.data.length
     });
+
+    setApprovedRecipes(approvedRes.data.slice(0, 8));
   }, []);
 
   useEffect(() => {
@@ -92,6 +99,32 @@ export default function AdminDashboard() {
     fetchStats();
   }
 
+  async function scheduleRecipeDelete() {
+    if (!scheduleTarget || !deleteReason.trim()) return;
+
+    await API.put(`/recipes/admin/schedule-delete/${scheduleTarget._id}`, {
+      reason: deleteReason,
+      hours: Number(deleteHours),
+      admin: "ADMIN"
+    });
+
+    setApprovedRecipes((prev) => prev.map((r) =>
+      r._id === scheduleTarget._id
+        ? {
+          ...r,
+          isDeletionScheduled: true,
+          deletionReason: deleteReason,
+          deletionScheduledFor: new Date(Date.now() + Number(deleteHours) * 60 * 60 * 1000).toISOString()
+        }
+        : r
+    ));
+
+    setScheduleTarget(null);
+    setDeleteReason("");
+    setDeleteHours(24);
+    fetchStats();
+  }
+
   if (isUsersPage) {
     return (
       <div className="admin-container">
@@ -125,16 +158,58 @@ export default function AdminDashboard() {
     return (
       <div className="admin-container">
         <h2>Admin Home Insights</h2>
-        <p className="insight-subtitle">Live snapshot of platform activity</p>
+        <p className="insight-subtitle">Live analytical overview of platform performance</p>
 
         <div className="insights-grid">
-          <div className="insight-card pending"><h3>Pending Requests</h3><p>{stats.pendingRequests}</p></div>
-          <div className="insight-card approved"><h3>Approved Requests</h3><p>{stats.approvedRequests}</p></div>
-          <div className="insight-card rejected"><h3>Rejected Requests</h3><p>{stats.rejectedRequests}</p></div>
-          <div className="insight-card"><h3>Approved Recipes</h3><p>{stats.approvedRecipes}</p></div>
-          <div className="insight-card"><h3>Total Users</h3><p>{stats.usersCount}</p></div>
-          <div className="insight-card"><h3>Approval Rate</h3><p>{approvalRate}%</p></div>
+          <div className="insight-card pending"><h3>Pending Requests</h3><p>{stats.pendingRequests}</p><small>Needs moderation action</small></div>
+          <div className="insight-card approved"><h3>Approved Requests</h3><p>{stats.approvedRequests}</p><small>Content successfully published</small></div>
+          <div className="insight-card rejected"><h3>Rejected Requests</h3><p>{stats.rejectedRequests}</p><small>Quality/compliance rejections</small></div>
+          <div className="insight-card"><h3>Approved Recipes</h3><p>{stats.approvedRecipes}</p><small>Total live recipes</small></div>
+          <div className="insight-card"><h3>Total Users</h3><p>{stats.usersCount}</p><small>Registered accounts</small></div>
+          <div className="insight-card"><h3>Approval Rate</h3><p>{approvalRate}%</p><small>Approved vs reviewed</small></div>
         </div>
+
+        <h3 style={{ marginTop: "22px" }}>Approved Recipes Control Panel</h3>
+        <p className="insight-subtitle">Schedule deletion with reason and timeline (user gets notified)</p>
+        <div className="request-grid">
+          {approvedRecipes.map((recipe) => (
+            <div className="request-card" key={recipe._id}>
+              <h4>{recipe.name}</h4>
+              <p>By: {recipe.createdBy}</p>
+              <p>⏱️ {recipe.prepTime || 0} mins · 🍽️ {recipe.servings || 0} servings</p>
+              {recipe.isDeletionScheduled ? (
+                <p className="REJECTED">Deletion scheduled for {new Date(recipe.deletionScheduledFor).toLocaleString()}</p>
+              ) : (
+                <button className="reject-btn" onClick={() => setScheduleTarget(recipe)}>
+                  Schedule Delete
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {scheduleTarget && (
+          <div className="reject-modal">
+            <div className="reject-modal-card">
+              <h3>Schedule Delete: {scheduleTarget.name}</h3>
+              <textarea
+                placeholder="Reason to notify user"
+                value={deleteReason}
+                onChange={(e) => setDeleteReason(e.target.value)}
+              />
+              <input
+                type="number"
+                value={deleteHours}
+                onChange={(e) => setDeleteHours(e.target.value)}
+                placeholder="Delete after hours"
+              />
+              <div className="actions">
+                <button className="reject-btn" onClick={scheduleRecipeDelete}>Confirm Schedule</button>
+                <button className="rate-btn" onClick={() => setScheduleTarget(null)}>Cancel</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

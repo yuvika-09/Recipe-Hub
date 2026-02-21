@@ -56,6 +56,14 @@ async function sendNotification(user, message, type) {
   }));
 }
 
+async function cleanupExpiredScheduledDeletions() {
+  await Recipe.deleteMany({
+    isDeletionScheduled: true,
+    deletionScheduledFor: { $lte: new Date() }
+  });
+}
+
+
 router.post("/", async (req, res) => {
   const request = await RecipeRequest.create({
     type: "CREATE",
@@ -101,11 +109,15 @@ router.post("/requests/delete", async (req, res) => {
     return res.status(400).send("Delete reason is required");
   }
 
+  const deleteDelayHours = Number(process.env.DELETE_REQUEST_DELAY_HOURS || 24);
+  const deleteScheduledFor = new Date(Date.now() + (Math.max(deleteDelayHours, 1) * 60 * 60 * 1000));
+
   const request = await RecipeRequest.create({
     type: "DELETE",
     recipeId: req.body.recipeId,
     requestedBy: req.body.requestedBy,
     deleteReason: reason,
+    deleteScheduledFor,
     status: "PENDING"
   });
 
@@ -115,10 +127,18 @@ router.post("/requests/delete", async (req, res) => {
     "REQUEST_DELETED"
   );
 
+  await sendNotification(
+    req.body.requestedBy,
+    `Delete request scheduled. Your recipe will be deleted in ${Math.max(deleteDelayHours, 1)} hour(s) unless reviewed sooner.`,
+    "REQUEST_DELETE_SCHEDULED"
+  );
+
   res.json(request);
 });
 
 router.get("/", async (req, res) => {
+  await cleanupExpiredScheduledDeletions();
+
   const page = Number(req.query.page) || 1;
   const limit = 5;
 
@@ -134,6 +154,8 @@ router.get("/", async (req, res) => {
 });
 
 router.get("/user/:username", async (req, res) => {
+  await cleanupExpiredScheduledDeletions();
+
   const recipes = await Recipe.find({
     createdBy: req.params.username,
     status: "APPROVED"
@@ -341,6 +363,56 @@ router.get("/recommend/:ingredients", async (req, res) => {
 });
 
 
+
+router.get("/admin/approved", async (_req, res) => {
+  await cleanupExpiredScheduledDeletions();
+
+  const recipes = await Recipe.find({ status: "APPROVED" })
+    .sort({ createdAt: -1 })
+    .lean();
+
+  res.json(recipes.map(buildRecipeResponse));
+});
+
+router.put("/admin/schedule-delete/:id", async (req, res) => {
+  const recipe = await Recipe.findById(req.params.id);
+
+  if (!recipe) {
+    return res.status(404).send("Recipe not found");
+  }
+
+  const reason = String(req.body.reason || "").trim();
+  const hours = Number(req.body.hours || 24);
+
+  if (!reason) {
+    return res.status(400).send("Deletion reason is required");
+  }
+
+  if (hours <= 0) {
+    return res.status(400).send("Timeline must be greater than 0 hours");
+  }
+
+  const scheduledFor = new Date(Date.now() + (hours * 60 * 60 * 1000));
+
+  recipe.isDeletionScheduled = true;
+  recipe.deletionScheduledFor = scheduledFor;
+  recipe.deletionReason = reason;
+  recipe.deletionScheduledBy = req.body.admin || "ADMIN";
+
+  await recipe.save();
+
+  await sendNotification(
+    recipe.createdBy,
+    `Admin scheduled deletion for recipe "${recipe.name}" in ${hours}h. Reason: ${reason}. You can request an update before deletion.`,
+    "RECIPE_DELETE_SCHEDULED"
+  );
+
+  res.json({
+    message: "Deletion scheduled",
+    deletionScheduledFor: scheduledFor
+  });
+});
+
 router.get("/stats/dashboard", async (_req, res) => {
   const [approvedRecipes, pendingRequests, approvedRequests, rejectedRequests] = await Promise.all([
     Recipe.countDocuments({ status: "APPROVED" }),
@@ -363,6 +435,8 @@ router.get("/requests/:status", async (req, res) => {
 });
 
 router.get("/:id", async (req, res) => {
+  await cleanupExpiredScheduledDeletions();
+
   const recipe = await Recipe.findById(req.params.id).lean();
 
   if (!recipe) {

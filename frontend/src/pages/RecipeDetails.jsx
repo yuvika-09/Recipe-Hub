@@ -68,6 +68,7 @@ export default function RecipeDetails() {
 
   return (
     <div className="container details-page">
+      <button className="rate-btn" onClick={() => navigate("/")}>← Back to Dashboard</button>
 
       <h2>{recipe.name}</h2>
       <p>

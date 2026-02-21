@@ -22,7 +22,14 @@ const recipeSchema = new mongoose.Schema({
       username: String,
       value: Number
     }
-  ]
+  ],
+  isDeletionScheduled: {
+    type: Boolean,
+    default: false
+  },
+  deletionScheduledFor: Date,
+  deletionReason: String,
+  deletionScheduledBy: String
 }, { timestamps: true });
 
 module.exports = mongoose.model("Recipe", recipeSchema);

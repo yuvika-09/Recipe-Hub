@@ -379,3 +379,54 @@ input {
 .reply-item {
   margin-bottom: 6px;
 }
+
+
+.tiny-btn {
+  margin-top: 6px;
+  border: none;
+  background: #e5e7eb;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.notif-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.owner-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px;
+  margin: 8px 0 12px;
+}
+
+.insight-subtitle {
+  color: #6b7280;
+  margin-bottom: 14px;
+}
+
+.insights-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.insight-card {
+  background: linear-gradient(135deg, #ffffff, #f8fafc);
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+}
+
+.insight-card p {
+  font-size: 28px;
+  font-weight: 700;
+  margin-top: 6px;
+}
+
+.insight-card.pending { border-left: 5px solid #d97706; }
+.insight-card.approved { border-left: 5px solid #16a34a; }
+.insight-card.rejected { border-left: 5px solid #dc2626; }

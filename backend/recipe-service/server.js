@@ -340,6 +340,18 @@ router.get("/recommend/:ingredients", async (req, res) => {
   res.json(scored);
 });
 
+
+router.get("/stats/dashboard", async (_req, res) => {
+  const [approvedRecipes, pendingRequests, approvedRequests, rejectedRequests] = await Promise.all([
+    Recipe.countDocuments({ status: "APPROVED" }),
+    RecipeRequest.countDocuments({ status: "PENDING" }),
+    RecipeRequest.countDocuments({ status: "APPROVED" }),
+    RecipeRequest.countDocuments({ status: "REJECTED" })
+  ]);
+
+  res.json({ approvedRecipes, pendingRequests, approvedRequests, rejectedRequests });
+});
+
 router.get("/requests/:status", async (req, res) => {
   const status = req.params.status.toUpperCase();
 

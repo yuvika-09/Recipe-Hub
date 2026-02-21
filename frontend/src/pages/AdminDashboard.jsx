@@ -13,6 +13,13 @@ export default function AdminDashboard() {
   const [rejectingId, setRejectingId] = useState(null);
   const [reason, setReason] = useState("");
   const [selectedRequest, setSelectedRequest] = useState(null);
+  const [stats, setStats] = useState({
+    approvedRecipes: 0,
+    pendingRequests: 0,
+    approvedRequests: 0,
+    rejectedRequests: 0,
+    usersCount: 0
+  });
 
   const isUsersPage = location.pathname.includes("/admin/users");
   const isRequestsPage = location.pathname.includes("/admin/requests");
@@ -28,6 +35,18 @@ export default function AdminDashboard() {
     setUsers(res.data);
   }, []);
 
+  const fetchStats = useCallback(async () => {
+    const [statsRes, usersRes] = await Promise.all([
+      API.get("/recipes/stats/dashboard"),
+      API.get("/auth/users")
+    ]);
+
+    setStats({
+      ...statsRes.data,
+      usersCount: usersRes.data.length
+    });
+  }, []);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       if (isUsersPage) {
@@ -35,16 +54,22 @@ export default function AdminDashboard() {
         return;
       }
 
+      if (isHomePage && !isRequestsPage) {
+        fetchStats();
+        return;
+      }
+
       fetchRequests();
     }, 0);
 
     return () => clearTimeout(timer);
-  }, [fetchRequests, fetchUsers, isUsersPage]);
+  }, [fetchRequests, fetchUsers, fetchStats, isUsersPage, isHomePage, isRequestsPage]);
 
   async function approve(id) {
     await API.put(`/recipes/requests/approve/${id}`);
     setRequests(prev => prev.filter(r => r._id !== id));
     if (selectedRequest?._id === id) setSelectedRequest(null);
+    fetchStats();
   }
 
   async function submitReject() {
@@ -55,6 +80,7 @@ export default function AdminDashboard() {
     setRequests(prev => prev.filter(r => r._id !== rejectingId));
     setRejectingId(null);
     setReason("");
+    fetchStats();
   }
 
   async function deleteUser(username) {
@@ -63,6 +89,7 @@ export default function AdminDashboard() {
 
     await API.delete(`/auth/users/${username}`);
     fetchUsers();
+    fetchStats();
   }
 
   if (isUsersPage) {
@@ -91,15 +118,22 @@ export default function AdminDashboard() {
   }
 
   if (isHomePage && !isRequestsPage) {
-    const pendingCount = requests.filter(r => r.status === "PENDING").length;
-    const approvedCount = requests.filter(r => r.status === "APPROVED").length;
+    const approvalRate = (stats.approvedRequests + stats.rejectedRequests) > 0
+      ? Math.round((stats.approvedRequests / (stats.approvedRequests + stats.rejectedRequests)) * 100)
+      : 0;
 
     return (
       <div className="admin-container">
-        <h2>Admin Home</h2>
-        <div className="request-grid">
-          <div className="request-card"><h3>Pending Requests</h3><p>{pendingCount}</p></div>
-          <div className="request-card"><h3>Approved Requests</h3><p>{approvedCount}</p></div>
+        <h2>Admin Home Insights</h2>
+        <p className="insight-subtitle">Live snapshot of platform activity</p>
+
+        <div className="insights-grid">
+          <div className="insight-card pending"><h3>Pending Requests</h3><p>{stats.pendingRequests}</p></div>
+          <div className="insight-card approved"><h3>Approved Requests</h3><p>{stats.approvedRequests}</p></div>
+          <div className="insight-card rejected"><h3>Rejected Requests</h3><p>{stats.rejectedRequests}</p></div>
+          <div className="insight-card"><h3>Approved Recipes</h3><p>{stats.approvedRecipes}</p></div>
+          <div className="insight-card"><h3>Total Users</h3><p>{stats.usersCount}</p></div>
+          <div className="insight-card"><h3>Approval Rate</h3><p>{approvalRate}%</p></div>
         </div>
       </div>
     );
@@ -151,6 +185,8 @@ export default function AdminDashboard() {
             {selectedRequest.data?.imageUrl && (
               <img className="details-image" src={selectedRequest.data.imageUrl} alt="Requested recipe" />
             )}
+            <p><b>Prep Time:</b> {selectedRequest.data?.prepTime || 0} mins</p>
+            <p><b>Servings:</b> {selectedRequest.data?.servings || 0}</p>
             <p><b>Ingredients:</b> {Array.isArray(selectedRequest.data?.ingredients)
               ? selectedRequest.data.ingredients.join(", ")
               : selectedRequest.data?.ingredients || "-"}</p>

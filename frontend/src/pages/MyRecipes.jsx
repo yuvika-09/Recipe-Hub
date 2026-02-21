@@ -55,6 +55,23 @@ export default function MyRecipes() {
     return () => clearTimeout(timer);
   }, [loadData]);
 
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      loadData();
+    }, 8000);
+
+    return () => clearInterval(intervalId);
+  }, [loadData]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      loadData();
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, [activeTab, loadData]);
+
   async function requestDelete(recipeId) {
     const reason = prompt("Reason for deletion request:");
 

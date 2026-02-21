@@ -41,31 +41,41 @@ export default function Comments({ recipeId }) {
     const value = text.trim();
     if (!value || !user) return;
 
-    const res = await API.post("/comments", {
-      recipeId,
-      username: user.username,
-      text: value,
-      parentId: null
-    });
+    try {
+      const res = await API.post("/comments", {
+        recipeId,
+        username: user.username,
+        text: value,
+        parentId: null
+      });
 
-    setComments(prev => [...prev, res.data]);
-    setText("");
+      setComments(prev => [...prev, res.data]);
+      setText("");
+      loadComments();
+    } catch (err) {
+      alert(err?.response?.data || "Failed to add comment");
+    }
   }
 
   async function addReply(parentId) {
     const value = replyText.trim();
     if (!value || !user) return;
 
-    const res = await API.post("/comments", {
-      recipeId,
-      username: user.username,
-      text: value,
-      parentId
-    });
+    try {
+      const res = await API.post("/comments", {
+        recipeId,
+        username: user.username,
+        text: value,
+        parentId
+      });
 
-    setComments(prev => [...prev, res.data]);
-    setReplyText("");
-    setReplyTo(null);
+      setComments(prev => [...prev, res.data]);
+      setReplyText("");
+      setReplyTo(null);
+      loadComments();
+    } catch (err) {
+      alert(err?.response?.data || "Failed to add reply");
+    }
   }
 
   return (

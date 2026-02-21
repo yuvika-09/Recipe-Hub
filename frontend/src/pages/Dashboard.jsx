@@ -52,7 +52,15 @@ export default function Dashboard() {
 
     const result = recipesData.filter(r => {
       const name = r.name ? String(r.name).toLowerCase() : "";
-      return name.includes(query);
+
+      let ingredients = "";
+      if (Array.isArray(r.ingredients)) {
+        ingredients = r.ingredients.join(" ").toLowerCase();
+      } else if (typeof r.ingredients === "string") {
+        ingredients = r.ingredients.toLowerCase();
+      }
+
+      return name.includes(query) || ingredients.includes(query);
     });
 
     setFiltered(result);

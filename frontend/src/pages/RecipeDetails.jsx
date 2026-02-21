@@ -32,6 +32,8 @@ export default function RecipeDetails() {
       requestedBy: user.username,
       data: {
         ...draft,
+        prepTime: Number(draft.prepTime) || 0,
+        servings: Number(draft.servings) || 0,
         ingredients: Array.isArray(draft.ingredients)
           ? draft.ingredients
           : String(draft.ingredients)
@@ -80,6 +82,28 @@ export default function RecipeDetails() {
       )}
 
       <p className="meta-row">⏱️ {recipe.prepTime || 0} mins · 🍽️ Serves {recipe.servings || 0}</p>
+
+      {isOwner && (
+        <div className="owner-meta-grid">
+          <input
+            placeholder="Image URL"
+            value={draft.imageUrl || ""}
+            onChange={(e) => setDraft({ ...draft, imageUrl: e.target.value })}
+          />
+          <input
+            placeholder="Prep time (mins)"
+            type="number"
+            value={draft.prepTime || 0}
+            onChange={(e) => setDraft({ ...draft, prepTime: Number(e.target.value) })}
+          />
+          <input
+            placeholder="Servings"
+            type="number"
+            value={draft.servings || 0}
+            onChange={(e) => setDraft({ ...draft, servings: Number(e.target.value) })}
+          />
+        </div>
+      )}
 
       <h4>Ingredients</h4>
       {isOwner ? (

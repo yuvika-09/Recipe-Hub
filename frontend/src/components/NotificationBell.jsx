@@ -4,7 +4,6 @@ import API from "../services/api";
 import { AuthContext } from "../context/AuthContextObject";
 
 export default function NotificationBell() {
-
   const { user } = useContext(AuthContext);
   const [notifications, setNotifications] = useState([]);
   const [open, setOpen] = useState(false);
@@ -74,9 +73,16 @@ export default function NotificationBell() {
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
   }
 
-  async function markSingleRead(id) {
-    await API.put(`/notifications/read/${id}`);
-    setNotifications(prev => prev.map(n => n._id === id ? { ...n, read: true } : n));
+  async function toggleRead(n) {
+    if (!n._id) return;
+
+    if (n.read) {
+      await API.put(`/notifications/unread/${n._id}`);
+    } else {
+      await API.put(`/notifications/read/${n._id}`);
+    }
+
+    setNotifications(prev => prev.map(item => item._id === n._id ? { ...item, read: !n.read } : item));
   }
 
   return (
@@ -100,13 +106,15 @@ export default function NotificationBell() {
           )}
 
           {notifications.map(n => (
-            <button
+            <div
               key={n._id || `${n.message}-${n.createdAt}`}
               className={`notif-item ${n.read ? "" : "unread"}`}
-              onClick={() => n._id && markSingleRead(n._id)}
             >
               <span>{n.message}</span>
-            </button>
+              <button className="tiny-btn" onClick={() => toggleRead(n)}>
+                {n.read ? "Mark unread" : "Mark read"}
+              </button>
+            </div>
           ))}
 
         </div>

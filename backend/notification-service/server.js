@@ -124,6 +124,22 @@ app.put("/notifications/read/:id", async (req, res) => {
   }
 });
 
+/* MARK ONE AS UNREAD */
+app.put("/notifications/unread/:id", async (req, res) => {
+
+  try {
+
+    await Notification.findByIdAndUpdate(
+      req.params.id,
+      { read: false }
+    );
+
+    res.send("Marked as unread");
+
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
 
 /* MARK ALL AS READ */
 app.put("/notifications/read-all/:user", async (req, res) => {

@@ -1,19 +1,18 @@
 import { useEffect, useState, useCallback } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import API from "../services/api";
 import RequestCard from "../components/RequestCard";
 
 export default function AdminDashboard() {
 
   const location = useLocation();
+  const navigate = useNavigate();
   const [requests, setRequests] = useState([]);
   const [users, setUsers] = useState([]);
   const [activeTab, setActiveTab] = useState("PENDING");
   const [rejectingId, setRejectingId] = useState(null);
   const [reason, setReason] = useState("");
   const [selectedRequest, setSelectedRequest] = useState(null);
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [selectedUserRecipes, setSelectedUserRecipes] = useState([]);
 
   const isUsersPage = location.pathname.includes("/admin/users");
   const isRequestsPage = location.pathname.includes("/admin/requests");
@@ -58,22 +57,11 @@ export default function AdminDashboard() {
     setReason("");
   }
 
-  async function openUserDetails(username) {
-    const [userRes, recipeRes] = await Promise.all([
-      API.get(`/auth/users/${username}`),
-      API.get(`/recipes/user/${username}`)
-    ]);
-
-    setSelectedUser(userRes.data);
-    setSelectedUserRecipes(recipeRes.data);
-  }
-
   async function deleteUser(username) {
     const ok = window.confirm(`Delete account for ${username}?`);
     if (!ok) return;
 
     await API.delete(`/auth/users/${username}`);
-    setSelectedUser(null);
     fetchUsers();
   }
 
@@ -88,7 +76,7 @@ export default function AdminDashboard() {
               <p>{u.email}</p>
 
               <div className="actions">
-                <button className="rate-btn" onClick={() => openUserDetails(u.username)}>
+                <button className="rate-btn" onClick={() => navigate(`/users/${u.username}`)}>
                   View Account
                 </button>
                 <button className="reject-btn" onClick={() => deleteUser(u.username)}>
@@ -98,23 +86,6 @@ export default function AdminDashboard() {
             </div>
           ))}
         </div>
-
-        {selectedUser && (
-          <div className="reject-modal">
-            <div className="reject-modal-card">
-              <h3>{selectedUser.username}</h3>
-              <p>{selectedUser.email}</p>
-              <h4 style={{ marginTop: "12px" }}>Recipes Added</h4>
-              {selectedUserRecipes.length === 0 && <p>No approved recipes yet.</p>}
-              {selectedUserRecipes.map(r => (
-                <p key={r._id}>• {r.name}</p>
-              ))}
-              <div className="actions">
-                <button className="rate-btn" onClick={() => setSelectedUser(null)}>Close</button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     );
   }

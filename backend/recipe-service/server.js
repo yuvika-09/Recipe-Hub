@@ -276,12 +276,14 @@ router.put("/rate/:id", async (req, res) => {
   if (!recipe)
     return res.status(404).send("Recipe not found");
 
-  const existing = recipe.ratings.find(
+  const existingIndex = recipe.ratings.findIndex(
     r => r.username === username
   );
 
-  if (existing) {
-    existing.value = rating;
+  if (existingIndex !== -1 && Number(recipe.ratings[existingIndex].value) === Number(rating)) {
+    recipe.ratings.splice(existingIndex, 1);
+  } else if (existingIndex !== -1) {
+    recipe.ratings[existingIndex].value = rating;
   } else {
     recipe.ratings.push({ username, value: rating });
   }
@@ -292,7 +294,8 @@ router.put("/rate/:id", async (req, res) => {
 
   res.json({
     avgRating: mapped.avgRating,
-    ratingCount: mapped.ratingCount
+    ratingCount: mapped.ratingCount,
+    ratings: recipe.ratings
   });
 });
 

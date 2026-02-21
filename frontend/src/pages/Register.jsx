@@ -1,42 +1,62 @@
 import { useState } from "react";
-import axios from "axios";
+import { Link, useNavigate } from "react-router-dom";
+import API from "../services/api";
 
 export default function Register() {
 
-  const [data, setData] = useState({});
+  const navigate = useNavigate();
+  const [data, setData] = useState({
+    username: "",
+    email: "",
+    password: ""
+  });
 
-  async function handleRegister() {
-    await axios.post("http://localhost:5001/register", data);
-    alert("Registered!");
+  async function handleRegister(e) {
+    e.preventDefault();
+
+    try {
+      await API.post("/auth/register", data);
+      alert("Registered successfully. Please login.");
+      navigate("/login");
+    } catch (err) {
+      alert(err?.response?.data || "Failed to register");
+    }
   }
 
-return (
-  <div className="auth-container">
+  return (
+    <div className="auth-container">
+      <form className="auth-card" onSubmit={handleRegister}>
+        <h2>Create Account</h2>
 
-    <div className="auth-card">
+        <input
+          placeholder="Username"
+          value={data.username}
+          onChange={(e) => setData({ ...data, username: e.target.value })}
+          required
+        />
 
-      <h2>Create Account</h2>
+        <input
+          type="email"
+          placeholder="Email"
+          value={data.email}
+          onChange={(e) => setData({ ...data, email: e.target.value })}
+          required
+        />
 
-      <input placeholder="Username"
-        onChange={(e)=>setData({...data,username:e.target.value})}
-      />
+        <input
+          type="password"
+          placeholder="Password"
+          value={data.password}
+          onChange={(e) => setData({ ...data, password: e.target.value })}
+          required
+        />
 
-      <input placeholder="Email"
-        onChange={(e)=>setData({...data,email:e.target.value})}
-      />
+        <button type="submit">Register</button>
 
-      <input type="password"
-        placeholder="Password"
-        onChange={(e)=>setData({...data,password:e.target.value})}
-      />
-
-      <button onClick={handleRegister}>
-        Register
-      </button>
-
+        <p style={{ marginTop: "8px" }}>
+          Already have an account? <Link to="/login">Login</Link>
+        </p>
+      </form>
     </div>
-
-  </div>
-);
-
+  );
 }

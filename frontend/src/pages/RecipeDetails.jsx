@@ -1,5 +1,5 @@
 import { useEffect, useState, useContext } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import API from "../services/api";
 import { AuthContext } from "../context/AuthContextObject";
 import Comments from "../components/Comments";
@@ -7,18 +7,24 @@ import Comments from "../components/Comments";
 export default function RecipeDetails() {
 
   const { id } = useParams();
+  const navigate = useNavigate();
   const { user } = useContext(AuthContext);
 
   const [recipe, setRecipe] = useState(null);
   const [draft, setDraft] = useState(null);
 
   useEffect(() => {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+
     API.get(`/recipes/${id}`)
       .then(res => {
         setRecipe(res.data);
         setDraft(res.data);
       });
-  }, [id]);
+  }, [id, user, navigate]);
 
   async function requestUpdate() {
     await API.post("/recipes/requests/update", {
@@ -73,6 +79,8 @@ export default function RecipeDetails() {
         <img className="details-image" src={recipe.imageUrl} alt={recipe.name} />
       )}
 
+      <p className="meta-row">⏱️ {recipe.prepTime || 0} mins · 🍽️ Serves {recipe.servings || 0}</p>
+
       <h4>Ingredients</h4>
       {isOwner ? (
         <textarea
@@ -80,7 +88,11 @@ export default function RecipeDetails() {
           onChange={(e) => setDraft({ ...draft, ingredients: e.target.value })}
         />
       ) : (
-        <p>{Array.isArray(recipe.ingredients) ? recipe.ingredients.join(", ") : recipe.ingredients}</p>
+        <ul className="ingredient-list">
+          {(Array.isArray(recipe.ingredients) ? recipe.ingredients : String(recipe.ingredients || "").split(",")).map((it, idx) => (
+            <li key={`${it}-${idx}`}>{String(it).trim()}</li>
+          ))}
+        </ul>
       )}
 
       <h4>Steps</h4>

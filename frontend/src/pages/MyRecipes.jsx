@@ -1,11 +1,13 @@
 import { useEffect, useState, useContext, useCallback } from "react";
 import API from "../services/api";
 import { AuthContext } from "../context/AuthContextObject";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 
 export default function MyRecipes() {
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
 
   const [requests, setRequests] = useState([]);
   const [myRecipes, setMyRecipes] = useState([]);
@@ -25,6 +27,28 @@ export default function MyRecipes() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
+      const tab = searchParams.get("tab");
+      if (tab === "REQUESTS") {
+        setActiveTab("REQUESTS");
+      }
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, [searchParams]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (location.state?.newRequest) {
+        setRequests((prev) => [location.state.newRequest, ...prev]);
+        setActiveTab("REQUESTS");
+      }
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, [location.state]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
       loadData();
     }, 0);
 
@@ -38,14 +62,14 @@ export default function MyRecipes() {
       return;
     }
 
-    await API.post("/recipes/requests/delete", {
+    const res = await API.post("/recipes/requests/delete", {
       recipeId,
       requestedBy: user.username,
       reason
     });
 
-    alert("Delete request sent to admin");
-    loadData();
+    setRequests((prev) => [res.data, ...prev]);
+    setActiveTab("REQUESTS");
   }
 
   return (
@@ -77,6 +101,7 @@ export default function MyRecipes() {
           {myRecipes.map(recipe => (
             <div className="request-card" key={recipe._id}>
               <h3>{recipe.name}</h3>
+              <p>⏱️ {recipe.prepTime || 0} mins · 🍽️ {recipe.servings || 0} servings</p>
               <p>Likes: {recipe.likes || 0}</p>
               <p>Rating: {Number(recipe.avgRating || 0).toFixed(1)}</p>
 
@@ -118,6 +143,7 @@ export default function MyRecipes() {
               </p>
 
               <p>Type: {r.type}</p>
+              {r.deleteReason && <p>Delete reason: {r.deleteReason}</p>}
 
               {r.recipeId && (
                 <button

@@ -1,4 +1,4 @@
-import { useEffect, useState, useContext } from "react";
+import { useEffect, useState, useContext, useRef } from "react";
 import io from "socket.io-client";
 import API from "../services/api";
 import { AuthContext } from "../context/AuthContextObject";
@@ -9,6 +9,7 @@ export default function NotificationBell() {
   const [notifications, setNotifications] = useState([]);
   const [open, setOpen] = useState(false);
   const username = user?.username;
+  const rootRef = useRef(null);
 
   useEffect(() => {
     if (!username) return;
@@ -51,6 +52,19 @@ export default function NotificationBell() {
     localStorage.setItem(`notifications_${username}`, JSON.stringify(notifications));
   }, [notifications, username]);
 
+  useEffect(() => {
+    if (!open) return;
+
+    const handleOutside = (event) => {
+      if (rootRef.current && !rootRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [open]);
+
   if (!username) return null;
 
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -66,7 +80,7 @@ export default function NotificationBell() {
   }
 
   return (
-    <div className="notification-bell">
+    <div className="notification-bell" ref={rootRef}>
       <button
         className="bell-trigger"
         onClick={() => setOpen(!open)}

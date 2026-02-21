@@ -1,5 +1,5 @@
 import { useState, useContext } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import API from "../services/api";
 import { AuthContext } from "../context/AuthContextObject";
 
@@ -24,16 +24,9 @@ export default function Login() {
     e.preventDefault();
 
     try {
-
-      const res =
-        await API.post("/auth/login", form);
-
-      console.log("LOGIN RESPONSE:", res.data);
-
+      const res = await API.post("/auth/login", form);
       login(res.data);
-
       navigate("/");
-
     } catch (err) {
       console.error(err);
       alert("Invalid credentials");
@@ -41,11 +34,9 @@ export default function Login() {
   }
 
   return (
-    <div className="login-container">
-
-      <h2>Login</h2>
-
-      <form onSubmit={handleLogin}>
+    <div className="auth-container">
+      <form className="auth-card" onSubmit={handleLogin}>
+        <h2>Login</h2>
 
         <input
           type="email"
@@ -65,12 +56,12 @@ export default function Login() {
           required
         />
 
-        <button type="submit">
-          Login
-        </button>
+        <button type="submit">Login</button>
 
+        <p style={{ marginTop: "8px" }}>
+          Don&apos;t have an account? <Link to="/register">Register</Link>
+        </p>
       </form>
-
     </div>
   );
 }

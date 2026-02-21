@@ -1,10 +1,12 @@
 import { useState, useEffect, useContext, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import API from "../services/api";
 import RecipeCard from "../components/RecipeCard";
 import { AuthContext } from "../context/AuthContextObject";
 
 export default function Dashboard() {
   const { user } = useContext(AuthContext);
+  const navigate = useNavigate();
 
   const [page, setPage] = useState(1);
   const [recipesData, setRecipes] = useState([]);
@@ -50,22 +52,17 @@ export default function Dashboard() {
 
     const result = recipesData.filter(r => {
       const name = r.name ? String(r.name).toLowerCase() : "";
-
-      let ingredients = "";
-      if (Array.isArray(r.ingredients)) {
-        ingredients = r.ingredients.join(" ").toLowerCase();
-      } else if (typeof r.ingredients === "string") {
-        ingredients = r.ingredients.toLowerCase();
-      }
-
-      return name.includes(query) || ingredients.includes(query);
+      return name.includes(query);
     });
 
     setFiltered(result);
   }
 
   async function likeRecipe(id) {
-    if (!user) return;
+    if (!user) {
+      navigate("/login");
+      return;
+    }
 
     const res = await API.put(`/recipes/like/${id}`, {
       username: user.username
@@ -86,7 +83,10 @@ export default function Dashboard() {
   }
 
   async function rateRecipe(id, rating) {
-    if (!user) return;
+    if (!user) {
+      navigate("/login");
+      return;
+    }
 
     const res = await API.put(`/recipes/rate/${id}`, {
       username: user.username,
@@ -99,7 +99,8 @@ export default function Dashboard() {
           ? {
             ...r,
             avgRating: res.data.avgRating,
-            ratingCount: res.data.ratingCount
+            ratingCount: res.data.ratingCount,
+            ratings: res.data.ratings
           }
           : r
       )
@@ -125,6 +126,8 @@ export default function Dashboard() {
             recipe={r}
             likeRecipe={likeRecipe}
             rateRecipe={rateRecipe}
+            isLoggedIn={Boolean(user)}
+            currentUsername={user?.username}
           />
         ))}
       </div>

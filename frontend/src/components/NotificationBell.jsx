@@ -1,7 +1,7 @@
 import { useEffect, useState, useContext } from "react";
 import io from "socket.io-client";
 import API from "../services/api";
-import { AuthContext } from "../context/AuthContext";
+import { AuthContext } from "../context/AuthContextObject";
 
 export default function NotificationBell() {
 
@@ -42,27 +42,45 @@ export default function NotificationBell() {
   const unreadCount =
     notifications.filter(n => !n.read).length;
 
+  async function markAllRead() {
+    await API.put(`/notifications/read-all/${username}`);
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  }
+
+  async function markSingleRead(id) {
+    await API.put(`/notifications/read/${id}`);
+    setNotifications(prev => prev.map(n => n._id === id ? { ...n, read: true } : n));
+  }
+
   return (
     <div className="notification-bell">
 
-      <div
+      <button
+        className="bell-trigger"
         onClick={() => setOpen(!open)}
-        style={{ cursor: "pointer" }}
       >
         🔔 {unreadCount}
-      </div>
+      </button>
 
       {open && (
         <div className="notif-dropdown">
+          <div className="notif-header">
+            <strong>Notifications</strong>
+            <button onClick={markAllRead}>Mark all read</button>
+          </div>
 
           {notifications.length === 0 && (
             <p>No notifications</p>
           )}
 
           {notifications.map(n => (
-            <p key={n._id}>
-              {n.message}
-            </p>
+            <button
+              key={n._id}
+              className={`notif-item ${n.read ? "" : "unread"}`}
+              onClick={() => markSingleRead(n._id)}
+            >
+              <span>{n.message}</span>
+            </button>
           ))}
 
         </div>

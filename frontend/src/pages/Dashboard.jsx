@@ -1,133 +1,134 @@
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, useCallback } from "react";
 import API from "../services/api";
-import { io } from "socket.io-client";
 import RecipeCard from "../components/RecipeCard";
-import NotificationBell from "../components/NotificationBell";
-import { AuthContext } from "../context/AuthContext";
-
+import { AuthContext } from "../context/AuthContextObject";
 
 export default function Dashboard() {
-    const { user } = useContext(AuthContext);
-console.log("FULL USER:", user);
+  const { user } = useContext(AuthContext);
 
-    const [page, setPage] = useState(1);
+  const [page, setPage] = useState(1);
+  const [recipesData, setRecipes] = useState([]);
+  const [filtered, setFiltered] = useState([]);
 
-    useEffect(() => {
-
-        const handleScroll = () => {
-
-            if (
-                window.innerHeight + document.documentElement.scrollTop + 1
-                >= document.documentElement.scrollHeight
-            ) {
-                loadMore();
-            }
-        };
-
-        window.addEventListener("scroll", handleScroll);
-
-        return () => window.removeEventListener("scroll", handleScroll);
-
-    }, [page]);
-
-
-    const [recipesData, setRecipes] = useState([]);
-    const [filtered, setFiltered] = useState([]);
-
-    useEffect(() => {
-        API.get("/recipes").then(res => {
-            setRecipes(res.data);
-            setFiltered(res.data);
-        });
-    }, []);
-
-    function searchRecipes(e) {
-
-        const query = e.target.value.toLowerCase();
-
-        const result = recipesData.filter(r => {
-            const name = r.name ? String(r.name).toLowerCase() : "";
-
-            let ingredients = "";
-            if (Array.isArray(r.ingredients)) {
-                ingredients = r.ingredients.join(" ").toLowerCase();
-            } else if (typeof r.ingredients === "string") {
-                ingredients = r.ingredients.toLowerCase();
-            }
-
-            return (
-                name.includes(query) ||
-                ingredients.includes(query)
-            );
-        });
-
-        setFiltered(result);
+  const loadMore = useCallback(async () => {
+    try {
+      const nextPage = page + 1;
+      const res = await API.get(`/recipes?page=${nextPage}`);
+      if (res && Array.isArray(res.data) && res.data.length) {
+        setRecipes(prev => [...prev, ...res.data]);
+        setFiltered(prev => [...prev, ...res.data]);
+        setPage(nextPage);
+      }
+    } catch (err) {
+      console.error("Failed to load more recipes:", err);
     }
+  }, [page]);
 
-    async function loadMore() {
-        try {
-            const nextPage = page + 1;
-            const res = await API.get(`/recipes?page=${nextPage}`);
-            if (res && Array.isArray(res.data) && res.data.length) {
-                setRecipes(prev => [...prev, ...res.data]);
-                setFiltered(prev => [...prev, ...res.data]);
-                setPage(nextPage);
-            }
-        } catch (err) {
-            console.error("Failed to load more recipes:", err);
-        }
-    }
+  useEffect(() => {
+    const handleScroll = () => {
+      if (
+        window.innerHeight + document.documentElement.scrollTop + 1
+        >= document.documentElement.scrollHeight
+      ) {
+        loadMore();
+      }
+    };
 
-    async function likeRecipe(id) {
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [loadMore]);
 
-        const res = await API.put(
-            `/recipes/like/${id}`,
-            { username: user.username }
-        );
+  useEffect(() => {
+    API.get("/recipes").then(res => {
+      setRecipes(res.data);
+      setFiltered(res.data);
+    });
+  }, []);
 
-        setFiltered(prev =>
-            prev.map(r =>
-                r._id === id
-                    ? { ...r, likes: res.data.likes }
-                    : r
-            )
-        );
-    }
+  function searchRecipes(e) {
+    const query = e.target.value.toLowerCase();
 
+    const result = recipesData.filter(r => {
+      const name = r.name ? String(r.name).toLowerCase() : "";
 
+      let ingredients = "";
+      if (Array.isArray(r.ingredients)) {
+        ingredients = r.ingredients.join(" ").toLowerCase();
+      } else if (typeof r.ingredients === "string") {
+        ingredients = r.ingredients.toLowerCase();
+      }
 
-    async function rateRecipe(id, rating) {
-        await API.put(`/recipes/rate/${id}`, { rating });
-    }
+      return name.includes(query) || ingredients.includes(query);
+    });
 
-    return (
-        <div className="container">
+    setFiltered(result);
+  }
 
-            <input
-                placeholder="🔎 Search delicious recipes..."
-                onChange={searchRecipes}
-                className="search"
-            />
+  async function likeRecipe(id) {
+    if (!user) return;
 
+    const res = await API.put(`/recipes/like/${id}`, {
+      username: user.username
+    });
 
-            {filtered.length === 0 && (
-                <p>No recipes yet 🍳</p>
-            )}
-
-            <div className="recipe-grid">
-                {filtered.map(r => (
-                    <RecipeCard
-                        key={r._id}
-                        recipe={r}
-                        likeRecipe={likeRecipe}
-                        rateRecipe={rateRecipe}
-                    />
-                ))}
-            </div>
-
-
-
-        </div>
+    setFiltered(prev =>
+      prev.map(r =>
+        r._id === id
+          ? {
+            ...r,
+            likes: res.data.likes,
+            avgRating: res.data.avgRating,
+            ratingCount: res.data.ratingCount
+          }
+          : r
+      )
     );
+  }
 
+  async function rateRecipe(id, rating) {
+    if (!user) return;
+
+    const res = await API.put(`/recipes/rate/${id}`, {
+      username: user.username,
+      rating
+    });
+
+    setFiltered(prev =>
+      prev.map(r =>
+        r._id === id
+          ? {
+            ...r,
+            avgRating: res.data.avgRating,
+            ratingCount: res.data.ratingCount
+          }
+          : r
+      )
+    );
+  }
+
+  return (
+    <div className="container">
+      <input
+        placeholder="🔎 Search delicious recipes..."
+        onChange={searchRecipes}
+        className="search"
+      />
+
+      {filtered.length === 0 && (
+        <p>No recipes yet 🍳</p>
+      )}
+
+      <div className="recipe-grid">
+        {filtered.map(r => (
+          <RecipeCard
+            key={r._id}
+            recipe={r}
+            likeRecipe={likeRecipe}
+            rateRecipe={rateRecipe}
+          />
+        ))}
+      </div>
+
+    </div>
+  );
 }

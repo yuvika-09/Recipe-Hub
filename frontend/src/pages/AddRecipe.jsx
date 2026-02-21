@@ -1,6 +1,6 @@
 import { useState, useContext } from "react";
 import API from "../services/api";
-import { AuthContext } from "../context/AuthContext";
+import { AuthContext } from "../context/AuthContextObject";
 
 export default function AddRecipe() {
 
@@ -12,36 +12,50 @@ export default function AddRecipe() {
     steps: ""
   });
 
-  async function handleSubmit() {
+  async function handleSubmit(e) {
+    e.preventDefault();
 
     await API.post("/recipes", {
       ...data,
+      ingredients: data.ingredients
+        .split(",")
+        .map(i => i.trim())
+        .filter(Boolean),
       createdBy: user.username
     });
 
     alert("Recipe submitted for approval");
+    setData({ name: "", ingredients: "", steps: "" });
   }
 
   return (
-    <div>
+    <div className="container auth-card">
       <h2>Add Recipe</h2>
 
-      <input
-        placeholder="Recipe Name"
-        onChange={(e)=>setData({...data,name:e.target.value})}
-      />
+      <form onSubmit={handleSubmit} className="auth-card">
+        <input
+          placeholder="Recipe Name"
+          value={data.name}
+          onChange={(e) => setData({ ...data, name: e.target.value })}
+          required
+        />
 
-      <textarea
-        placeholder="Ingredients"
-        onChange={(e)=>setData({...data,ingredients:e.target.value})}
-      />
+        <textarea
+          placeholder="Ingredients (comma separated)"
+          value={data.ingredients}
+          onChange={(e) => setData({ ...data, ingredients: e.target.value })}
+          required
+        />
 
-      <textarea
-        placeholder="Steps"
-        onChange={(e)=>setData({...data,steps:e.target.value})}
-      />
+        <textarea
+          placeholder="Steps"
+          value={data.steps}
+          onChange={(e) => setData({ ...data, steps: e.target.value })}
+          required
+        />
 
-      <button onClick={handleSubmit}>Submit</button>
+        <button type="submit">Submit</button>
+      </form>
     </div>
   );
 }

@@ -2,19 +2,18 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: "Segoe UI", sans-serif;
+  font-family: "Inter", "Segoe UI", sans-serif;
 }
 
 body {
-  background: #f8f9fc;
-  color: #222;
+  background: #f5f7fb;
+  color: #1f2937;
 }
 
 .container {
-  width: 90%;
+  width: 92%;
   max-width: 1200px;
-  margin: auto;
-  padding-top: 25px;
+  margin: 24px auto;
 }
 
 button {
@@ -22,60 +21,77 @@ button {
   transition: 0.2s ease;
 }
 
-/* NAVBAR */
 .nav {
-  height: 65px;
-  background: white;
-  padding: 0 30px;
+  min-height: 65px;
+  background: #fff;
+  padding: 10px 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.06);
+  position: sticky;
+  top: 0;
+  z-index: 20;
 }
 
 .logo {
-  color: #ff5a5f;
+  color: #ef4444;
+  font-weight: 700;
+  font-size: 1.2rem;
 }
 
 .nav-links {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 14px;
+  flex-wrap: wrap;
 }
 
 .nav-links a {
   text-decoration: none;
-  color: #333;
+  color: #374151;
   font-weight: 500;
 }
 
 .nav-links a:hover {
-  color: #ff5a5f;
+  color: #ef4444;
 }
 
 .logout-btn {
   border: none;
-  background: #ff5a5f;
+  background: #ef4444;
   color: white;
   padding: 8px 14px;
   border-radius: 8px;
 }
 
+.search {
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid #d1d5db;
+  margin-bottom: 20px;
+  font-size: 16px;
+  background: white;
+}
 
-
-/* RECIPE CARD */
-.recipe-grid {
+.recipe-grid,
+.request-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill,minmax(280px,1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 20px;
 }
 
-.recipe-card {
+.recipe-card,
+.request-card {
   background: white;
-  padding: 15px;
+  padding: 16px;
   border-radius: 14px;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-  transition: 0.3s;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+}
+
+.recipe-card {
+  transition: 0.2s;
 }
 
 .recipe-card:hover {
@@ -84,23 +100,28 @@ button {
 
 .image-placeholder {
   background: #ffe8e8;
-  height: 160px;
+  height: 140px;
   border-radius: 10px;
   display: flex;
   justify-content: center;
   align-items: center;
-  font-size: 50px;
+  font-size: 42px;
 }
 
 .creator {
-  color: #666;
-  margin-top: 5px;
+  color: #6b7280;
+  margin-top: 6px;
 }
 
 .ingredients {
-  margin-top: 8px;
+  margin-top: 10px;
   font-size: 14px;
-  color: #444;
+  color: #374151;
+}
+
+.meta-row {
+  margin-top: 8px;
+  color: #374151;
 }
 
 .actions {
@@ -109,223 +130,159 @@ button {
   gap: 10px;
 }
 
-.like-btn {
-  background: #ffeded;
+.like-btn,
+.rate-btn,
+.approve-btn,
+.reject-btn {
   border: none;
   padding: 8px 12px;
   border-radius: 8px;
+}
+
+.like-btn {
+  background: #ffe4e6;
 }
 
 .rate-btn {
-  background: #fff4db;
-  border: none;
-  padding: 8px 12px;
-  border-radius: 8px;
+  background: #fef3c7;
 }
 
-.search {
-  width: 100%;
-  padding: 14px;
-  border-radius: 12px;
-  border: 1px solid #ddd;
-  margin-bottom: 20px;
-  font-size: 16px;
-  background: white;
+.approve-btn {
+  background: #16a34a;
+  color: #fff;
+}
+
+.reject-btn {
+  background: #dc2626;
+  color: #fff;
 }
 
 .notification-bell {
-  position: fixed;
-  right: 20px;
-  bottom: 20px;
-  background: #ff5a5f;
-  color: white;
-  padding: 12px 15px;
-  border-radius: 50px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  position: relative;
 }
 
-.auth-container {
-  height: calc(100vh - 65px);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.auth-card {
-  background: white;
-  padding: 30px;
-  border-radius: 12px;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.1);
-  width: 320px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.auth-card input {
-  padding: 10px;
-  border-radius: 8px;
-  border: 1px solid #ddd;
-}
-
-.auth-card button {
-  background: #ff5a5f;
-  color: white;
+.bell-trigger {
   border: none;
+  background: #111827;
+  color: white;
+  border-radius: 999px;
+  padding: 6px 12px;
+}
+
+.notif-dropdown {
+  position: absolute;
+  right: 0;
+  margin-top: 8px;
+  width: 320px;
+  max-height: 300px;
+  overflow: auto;
+  background: white;
+  border-radius: 12px;
   padding: 10px;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.15);
+}
+
+.notif-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.notif-header button {
+  border: none;
+  background: #e5e7eb;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.notif-item {
+  width: 100%;
+  border: none;
+  text-align: left;
+  background: #f9fafb;
+  padding: 8px;
+  margin-bottom: 6px;
   border-radius: 8px;
 }
 
+.notif-item.unread {
+  background: #fee2e2;
+}
 
-/* RECIPES STATUS */
+.tabs {
+  display: flex;
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.tabs button {
+  padding: 8px 16px;
+  border: none;
+  background: #e5e7eb;
+  border-radius: 8px;
+}
+
+.tabs .active {
+  background: #ef4444;
+  color: white;
+}
+
 .status {
   margin-left: 8px;
   font-weight: bold;
 }
 
 .PENDING {
-  color: orange;
+  color: #d97706;
 }
 
 .APPROVED {
-  color: green;
+  color: #16a34a;
 }
 
 .REJECTED {
-  color: red;
+  color: #dc2626;
 }
 
-/* ADMIN DASHBOARD */
 .admin-container {
-  width: 90%;
+  width: 92%;
   max-width: 1100px;
-  margin: auto;
-  padding-top: 20px;
+  margin: 24px auto;
 }
 
-.tabs {
-  display: flex;
-  gap: 10px;
-  margin: 20px 0;
-}
-
-.tabs button {
-  padding: 8px 16px;
-  border: none;
-  background: #eee;
-  border-radius: 8px;
-}
-
-.tabs .active {
-  background: #ff5a5f;
-  color: white;
-}
-
-.request-grid {
+.reject-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
   display: grid;
-  grid-template-columns: repeat(auto-fill,minmax(280px,1fr));
-  gap: 20px;
+  place-items: center;
 }
 
-.request-card {
-  background: white;
-  padding: 15px;
-  border-radius: 12px;
-  box-shadow: 0 5px 12px rgba(0,0,0,0.08);
-}
-
-.actions {
-  display: flex;
-  gap: 10px;
-  margin-top: 12px;
-}
-
-.approve-btn {
-  background: #4caf50;
-  color: white;
-  border: none;
-  padding: 8px 10px;
-  border-radius: 8px;
-}
-
-.reject-btn {
-  background: #f44336;
-  color: white;
-  border: none;
-  padding: 8px 10px;
-  border-radius: 8px;
-}
-
-
-/* REQUEST CARD */
-/* ADMIN DASHBOARD */
-.admin-container {
+.reject-modal-card {
   width: 90%;
-  max-width: 1100px;
-  margin: auto;
-  padding-top: 20px;
-}
-
-.tabs {
-  display: flex;
-  gap: 10px;
-  margin: 20px 0;
-}
-
-.tabs button {
-  padding: 8px 16px;
-  border: none;
-  background: #eee;
-  border-radius: 8px;
-}
-
-.tabs .active {
-  background: #ff5a5f;
-  color: white;
-}
-
-.request-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill,minmax(280px,1fr));
-  gap: 20px;
-}
-
-.request-card {
+  max-width: 500px;
   background: white;
-  padding: 15px;
   border-radius: 12px;
-  box-shadow: 0 5px 12px rgba(0,0,0,0.08);
+  padding: 16px;
 }
 
-.actions {
-  display: flex;
-  gap: 10px;
-  margin-top: 12px;
-}
-
-.approve-btn {
-  background: #4caf50;
-  color: white;
-  border: none;
-  padding: 8px 10px;
+textarea,
+input {
+  width: 100%;
+  border: 1px solid #d1d5db;
   border-radius: 8px;
+  padding: 10px;
+  margin-top: 8px;
 }
 
-.reject-btn {
-  background: #f44336;
-  color: white;
-  border: none;
-  padding: 8px 10px;
-  border-radius: 8px;
+.auth-card {
+  background: white;
+  padding: 18px;
+  border-radius: 12px;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.08);
 }
 
-/* NOTIFICATION SERVICE */
-.notif-dropdown {
-  background:white;
-  padding:10px;
-  border-radius:8px;
-  margin-top:10px;
-  max-height:200px;
-  overflow:auto;
+.details-page textarea {
+  min-height: 120px;
 }
-

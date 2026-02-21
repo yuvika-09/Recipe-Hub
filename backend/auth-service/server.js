@@ -22,13 +22,14 @@ const User = mongoose.model("User", {
   password: String
 });
 
-/* ======================
-   REGISTER
-====================== */
 app.post("/register", async (req, res) => {
+  const existing = await User.findOne({ email: req.body.email });
 
-  const hashed =
-    await bcrypt.hash(req.body.password, 10);
+  if (existing) {
+    return res.status(400).send("Email already exists");
+  }
+
+  const hashed = await bcrypt.hash(req.body.password, 10);
 
   const user = new User({
     username: req.body.username,
@@ -41,40 +42,32 @@ app.post("/register", async (req, res) => {
   res.send("User Registered");
 });
 
-
-/* ======================
-   LOGIN
-====================== */
 app.post("/login", async (req, res) => {
-
   const { email, password } = req.body;
 
-  /* ADMIN LOGIN */
   if (
     email === process.env.ADMIN_EMAIL &&
     password === process.env.ADMIN_PASSWORD
   ) {
-
     const token = jwt.sign(
-      { role: "ADMIN" },
+      { role: "ADMIN", username: "admin", email },
       process.env.SECRET
     );
 
     return res.json({
       token,
       role: "ADMIN",
-      username: "admin"
+      username: "admin",
+      email
     });
   }
 
-  /* USER LOGIN */
   const user = await User.findOne({ email });
 
   if (!user)
     return res.status(404).send("Not found");
 
-  const valid =
-    await bcrypt.compare(password, user.password);
+  const valid = await bcrypt.compare(password, user.password);
 
   if (!valid)
     return res.status(401).send("Wrong password");
@@ -83,16 +76,70 @@ app.post("/login", async (req, res) => {
     {
       id: user._id,
       role: "USER",
-      username: user.username
+      username: user.username,
+      email: user.email
     },
     process.env.SECRET
   );
 
   res.json({
     token,
+    id: user._id,
     role: "USER",
-    username: user.username
+    username: user.username,
+    email: user.email
   });
+});
+
+app.get("/users", async (_req, res) => {
+  const users = await User.find({}, { password: 0 }).sort({ username: 1 });
+  res.json(users);
+});
+
+app.patch("/users/:username", async (req, res) => {
+  const existing = await User.findOne({ username: req.params.username });
+
+  if (!existing) {
+    return res.status(404).send("User not found");
+  }
+
+  const nextUsername = req.body.username?.trim();
+  const nextEmail = req.body.email?.trim();
+
+  if (nextEmail && nextEmail !== existing.email) {
+    const used = await User.findOne({ email: nextEmail });
+    if (used) return res.status(400).send("Email already in use");
+  }
+
+  existing.username = nextUsername || existing.username;
+  existing.email = nextEmail || existing.email;
+  await existing.save();
+
+  res.json({
+    username: existing.username,
+    email: existing.email
+  });
+});
+
+app.patch("/users/:username/password", async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+
+  const user = await User.findOne({ username: req.params.username });
+
+  if (!user) {
+    return res.status(404).send("User not found");
+  }
+
+  const valid = await bcrypt.compare(currentPassword, user.password);
+
+  if (!valid) {
+    return res.status(401).send("Current password is invalid");
+  }
+
+  user.password = await bcrypt.hash(newPassword, 10);
+  await user.save();
+
+  res.send("Password updated");
 });
 
 app.listen(process.env.AUTH_PORT, () =>

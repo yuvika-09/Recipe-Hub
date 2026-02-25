@@ -173,11 +173,15 @@ export default function MyRecipes() {
                 <p>
                   Rating: {Number(recipe.avgRating || 0).toFixed(1)}
                 </p>
+                {recipe.isDeletionScheduled && (
+                  <p className="status-badge warning">
+                    Status: delete scheduled on {new Date(recipe.deletionScheduledFor).toLocaleString()}
+                  </p>
+                )}
 
                 {pendingDeleteRequest && (
                   <p>
-                    Deletion scheduled:{" "}
-                    {deleteCountdown || "Pending"}
+                    Deletion request countdown: {deleteCountdown || "Pending"}
                   </p>
                 )}
 
@@ -211,50 +215,58 @@ export default function MyRecipes() {
         <div className="request-grid">
           {requests.length === 0 && <p>No requests yet</p>}
 
-          {requests.map((r) => (
-            <div className="request-card" key={r._id}>
-              <h3>{r.data?.name || "Recipe Request"}</h3>
+          {requests.map((r) => {
+            const isDeletedRequest = r.type === "DELETE" && r.status === "APPROVED";
 
-              <p>
-                Status:{" "}
-                <span className={`status ${r.status}`}>
-                  {r.status}
-                </span>
-              </p>
+            return (
+              <div className="request-card" key={r._id}>
+                <h3>{r.data?.name || "Recipe Request"}</h3>
 
-              <p>Type: {r.type}</p>
-
-              {r.deleteReason && (
-                <p>Delete reason: {r.deleteReason}</p>
-              )}
-
-              {r.deleteScheduledFor && (
                 <p>
-                  Delete scheduled for:{" "}
-                  {new Date(
-                    r.deleteScheduledFor
-                  ).toLocaleString()}
+                  Status:{" "}
+                  <span className={`status ${isDeletedRequest ? "REJECTED" : r.status}`}>
+                    {isDeletedRequest ? "DELETED" : r.status}
+                  </span>
                 </p>
-              )}
 
-              {r.recipeId && (
-                <button
-                  className="rate-btn"
-                  onClick={() =>
-                    navigate(`/recipe/${r.recipeId}`)
-                  }
-                >
-                  Open Recipe
-                </button>
-              )}
+                <p>Type: {r.type}</p>
 
-              {r.rejectionReason && (
-                <p className="reject-reason">
-                  Reason: {r.rejectionReason}
-                </p>
-              )}
-            </div>
-          ))}
+                {r.deleteReason && (
+                  <p>Delete reason: {r.deleteReason}</p>
+                )}
+
+                {r.deleteScheduledFor && (
+                  <p>
+                    Delete scheduled for:{" "}
+                    {new Date(
+                      r.deleteScheduledFor
+                    ).toLocaleString()}
+                  </p>
+                )}
+
+                {isDeletedRequest ? (
+                  <p className="meta-row">This recipe has been deleted.</p>
+                ) : (
+                  r.recipeId && (
+                    <button
+                      className="rate-btn"
+                      onClick={() =>
+                        navigate(`/recipe/${r.recipeId}`)
+                      }
+                    >
+                      Open Recipe
+                    </button>
+                  )
+                )}
+
+                {r.rejectionReason && (
+                  <p className="reject-reason">
+                    Reason: {r.rejectionReason}
+                  </p>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

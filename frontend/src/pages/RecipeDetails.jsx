@@ -5,13 +5,14 @@ import { AuthContext } from "../context/AuthContextObject";
 import Comments from "../components/Comments";
 
 export default function RecipeDetails() {
-
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);
 
   const [recipe, setRecipe] = useState(null);
   const [draft, setDraft] = useState(null);
+  const [deleteReason, setDeleteReason] = useState("");
+  const [deleteHours, setDeleteHours] = useState(24);
 
   useEffect(() => {
     if (!user) {
@@ -44,6 +45,9 @@ export default function RecipeDetails() {
     });
 
     alert("Update request sent");
+    const refreshed = await API.get(`/recipes/${id}`);
+    setRecipe(refreshed.data);
+    setDraft(refreshed.data);
   }
 
   async function requestDelete() {
@@ -62,13 +66,40 @@ export default function RecipeDetails() {
     alert("Delete request sent");
   }
 
+  async function scheduleDeletionByAdmin() {
+    if (!deleteReason.trim()) {
+      return;
+    }
+
+    await API.put(`/recipes/admin/schedule-delete/${id}`, {
+      reason: deleteReason,
+      hours: Number(deleteHours),
+      admin: user.username || "ADMIN"
+    });
+
+    const refreshed = await API.get(`/recipes/${id}`);
+    setRecipe(refreshed.data);
+    setDraft(refreshed.data);
+    setDeleteReason("");
+    setDeleteHours(24);
+  }
+
+  async function cancelDeletionByAdmin() {
+    await API.put(`/recipes/admin/cancel-delete/${id}`);
+
+    const refreshed = await API.get(`/recipes/${id}`);
+    setRecipe(refreshed.data);
+    setDraft(refreshed.data);
+  }
+
   if (!recipe || !draft) return <p>Loading...</p>;
 
   const isOwner = user?.username === recipe.createdBy;
+  const isAdmin = user?.role === "ADMIN";
 
   return (
     <div className="container details-page">
-      <button className="rate-btn" onClick={() => navigate("/")}>← Back to Dashboard</button>
+      <button className="back-arrow-btn" onClick={() => navigate(user?.role === "ADMIN" ? "/admin/home" : "/")}>←</button>
 
       <h2>{recipe.name}</h2>
       <p>
@@ -84,8 +115,17 @@ export default function RecipeDetails() {
 
       <p className="meta-row">⏱️ {recipe.prepTime || 0} mins · 🍽️ Serves {recipe.servings || 0}</p>
 
+      {recipe.isDeletionScheduled && (
+        <p className="status-badge warning">Status: delete scheduled on {new Date(recipe.deletionScheduledFor).toLocaleString()}</p>
+      )}
+
       {isOwner && (
         <div className="owner-meta-grid">
+          <input
+            placeholder="Recipe Name"
+            value={draft.name || ""}
+            onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+          />
           <input
             placeholder="Image URL"
             value={draft.imageUrl || ""}
@@ -142,12 +182,38 @@ export default function RecipeDetails() {
           >
             Request Delete
           </button>
+        </div>
+      )}
 
+      {isAdmin && (
+        <div className="admin-delete-panel">
+          <h4>Deletion Controls</h4>
+          {recipe.isDeletionScheduled ? (
+            <>
+              <p className="meta-row">Scheduled for: {new Date(recipe.deletionScheduledFor).toLocaleString()}</p>
+              <p className="meta-row">Reason: {recipe.deletionReason || "No reason provided"}</p>
+              <button className="approve-btn" onClick={cancelDeletionByAdmin}>Cancel Deletion</button>
+            </>
+          ) : (
+            <>
+              <textarea
+                placeholder="Reason to notify user"
+                value={deleteReason}
+                onChange={(e) => setDeleteReason(e.target.value)}
+              />
+              <input
+                type="number"
+                value={deleteHours}
+                onChange={(e) => setDeleteHours(e.target.value)}
+                placeholder="Delete after hours"
+              />
+              <button className="reject-btn" onClick={scheduleDeletionByAdmin}>Schedule Deletion</button>
+            </>
+          )}
         </div>
       )}
 
       <Comments recipeId={id} />
-
     </div>
   );
 }

@@ -4,7 +4,6 @@ import API from "../services/api";
 import { AuthContext } from "../context/AuthContextObject";
 
 export default function Login() {
-
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
 
@@ -34,9 +33,12 @@ export default function Login() {
   }
 
   return (
-    <div className="auth-container">
+    <div className="auth-container auth-hero">
+      <div className="auth-backdrop" aria-hidden="true" />
+
       <form className="auth-card" onSubmit={handleLogin}>
-        <h2>Login</h2>
+        <h2>Welcome Back</h2>
+        <p className="auth-subtitle">Sign in to continue discovering and sharing recipes.</p>
 
         <input
           type="email"
@@ -56,9 +58,9 @@ export default function Login() {
           required
         />
 
-        <button type="submit">Login</button>
+        <button type="submit" className="auth-submit-btn">Login</button>
 
-        <p style={{ marginTop: "8px" }}>
+        <p className="auth-switch-text">
           Don&apos;t have an account? <Link to="/register">Register</Link>
         </p>
       </form>

@@ -195,7 +195,11 @@ router.put("/requests/approve/:id", async (req, res) => {
       request.recipeId,
       {
         ...request.data,
-        status: "APPROVED"
+         status: "APPROVED",
+        isDeletionScheduled: false,
+        deletionScheduledFor: null,
+        deletionReason: "",
+        deletionScheduledBy: ""
       },
       { new: true }
     );
@@ -410,6 +414,31 @@ router.put("/admin/schedule-delete/:id", async (req, res) => {
   res.json({
     message: "Deletion scheduled",
     deletionScheduledFor: scheduledFor
+  });
+});
+
+router.put("/admin/cancel-delete/:id", async (req, res) => {
+  const recipe = await Recipe.findById(req.params.id);
+
+  if (!recipe) {
+    return res.status(404).send("Recipe not found");
+  }
+
+  recipe.isDeletionScheduled = false;
+  recipe.deletionScheduledFor = null;
+  recipe.deletionReason = "";
+  recipe.deletionScheduledBy = "";
+
+  await recipe.save();
+
+  await sendNotification(
+    recipe.createdBy,
+    `Deletion schedule was canceled for recipe "${recipe.name}".`,
+    "RECIPE_DELETE_CANCELLED"
+  );
+
+  res.json({
+    message: "Deletion schedule canceled"
   });
 });
 

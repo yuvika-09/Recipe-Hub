@@ -23,19 +23,13 @@ export default function Comments({ recipeId }) {
     return () => clearTimeout(timer);
   }, [loadComments]);
 
-  const grouped = useMemo(() => {
-    const roots = comments.filter((c) => !c.parentId);
-    const repliesByParent = comments
-      .filter((c) => c.parentId)
-      .reduce((acc, c) => {
-        const key = String(c.parentId);
-        if (!acc[key]) acc[key] = [];
-        acc[key].push(c);
-        return acc;
-      }, {});
+  const commentsByParent = useMemo(() => comments.reduce((acc, comment) => {
+    const key = comment.parentId ? String(comment.parentId) : "root";
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(comment);
+    return acc;
+  }, {}), [comments]);
 
-    return { roots, repliesByParent };
-  }, [comments]);
 
   async function addComment() {
     const value = text.trim();
@@ -78,44 +72,53 @@ export default function Comments({ recipeId }) {
     }
   }
 
+  function openReply(comment) {
+    setReplyTo(comment._id);
+    setReplyText(`@${comment.username} `);
+  }
+
+  function renderCommentThread(parentKey = "root", level = 0) {
+    const list = commentsByParent[parentKey] || [];
+
+    return list.map((comment) => (
+      <div
+        key={comment._id || `${comment.username}-${comment.text}-${comment.createdAt}`}
+        className={level === 0 ? "comment-item" : "reply-item"}
+      >
+        <strong>{comment.username}</strong>
+        <p>{comment.text}</p>
+
+        <button className="rate-btn" onClick={() => openReply(comment)} disabled={!user}>
+          Reply
+        </button>
+
+        {replyTo === comment._id && (
+          <div className="reply-box">
+            <textarea
+              value={replyText}
+              placeholder="Write a reply..."
+              onChange={(e) => setReplyText(e.target.value)}
+            />
+            <button className="approve-btn" onClick={() => addReply(comment._id)}>
+              Post Reply
+            </button>
+          </div>
+        )}
+
+        <div className="reply-list">
+          {renderCommentThread(String(comment._id), level + 1)}
+        </div>
+      </div>
+    ));
+  }
+
   return (
     <div className="comments-box">
       <h4>Comments</h4>
 
-      {grouped.roots.length === 0 && <p>No comments yet.</p>}
+      {(commentsByParent.root || []).length === 0 && <p>No comments yet.</p>}
 
-      {grouped.roots.map((c) => (
-        <div key={c._id || `${c.username}-${c.text}`} className="comment-item">
-          <strong>{c.username}</strong>
-          <p>{c.text}</p>
-
-          <button className="rate-btn" onClick={() => setReplyTo(c._id)}>
-            Reply
-          </button>
-
-          {replyTo === c._id && (
-            <div className="reply-box">
-              <textarea
-                value={replyText}
-                placeholder="Write a reply..."
-                onChange={(e) => setReplyText(e.target.value)}
-              />
-              <button className="approve-btn" onClick={() => addReply(c._id)}>
-                Post Reply
-              </button>
-            </div>
-          )}
-
-          <div className="reply-list">
-            {(grouped.repliesByParent[String(c._id)] || []).map((r) => (
-              <div key={r._id} className="reply-item">
-                <strong>{r.username}</strong>
-                <p>{r.text}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
+      {renderCommentThread()}
 
       <textarea
         value={text}

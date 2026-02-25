@@ -4,7 +4,6 @@ import API from "../services/api";
 import RequestCard from "../components/RequestCard";
 
 export default function AdminDashboard() {
-
   const location = useLocation();
   const navigate = useNavigate();
   const [requests, setRequests] = useState([]);
@@ -21,9 +20,6 @@ export default function AdminDashboard() {
     usersCount: 0
   });
   const [approvedRecipes, setApprovedRecipes] = useState([]);
-  const [scheduleTarget, setScheduleTarget] = useState(null);
-  const [deleteReason, setDeleteReason] = useState("");
-  const [deleteHours, setDeleteHours] = useState(24);
 
   const isUsersPage = location.pathname.includes("/admin/users");
   const isRequestsPage = location.pathname.includes("/admin/requests");
@@ -51,7 +47,7 @@ export default function AdminDashboard() {
       usersCount: usersRes.data.length
     });
 
-    setApprovedRecipes(approvedRes.data.slice(0, 8));
+    setApprovedRecipes(approvedRes.data);
   }, []);
 
   useEffect(() => {
@@ -99,29 +95,8 @@ export default function AdminDashboard() {
     fetchStats();
   }
 
-  async function scheduleRecipeDelete() {
-    if (!scheduleTarget || !deleteReason.trim()) return;
-
-    await API.put(`/recipes/admin/schedule-delete/${scheduleTarget._id}`, {
-      reason: deleteReason,
-      hours: Number(deleteHours),
-      admin: "ADMIN"
-    });
-
-    setApprovedRecipes((prev) => prev.map((r) =>
-      r._id === scheduleTarget._id
-        ? {
-          ...r,
-          isDeletionScheduled: true,
-          deletionReason: deleteReason,
-          deletionScheduledFor: new Date(Date.now() + Number(deleteHours) * 60 * 60 * 1000).toISOString()
-        }
-        : r
-    ));
-
-    setScheduleTarget(null);
-    setDeleteReason("");
-    setDeleteHours(24);
+  async function cancelScheduledDelete(recipeId) {
+    await API.put(`/recipes/admin/cancel-delete/${recipeId}`);
     fetchStats();
   }
 
@@ -155,6 +130,8 @@ export default function AdminDashboard() {
       ? Math.round((stats.approvedRequests / (stats.approvedRequests + stats.rejectedRequests)) * 100)
       : 0;
 
+    const scheduledRecipes = approvedRecipes.filter((recipe) => recipe.isDeletionScheduled);
+
     return (
       <div className="admin-container">
         <h2>Admin Home Insights</h2>
@@ -169,54 +146,33 @@ export default function AdminDashboard() {
           <div className="insight-card"><h3>Approval Rate</h3><p>{approvalRate}%</p><small>Approved vs reviewed</small></div>
         </div>
 
-        <h3 style={{ marginTop: "22px" }}>Approved Recipes Control Panel</h3>
-        <p className="insight-subtitle">Schedule deletion with reason and timeline (user gets notified)</p>
+        <h3 style={{ marginTop: "22px" }}>Scheduled for Deletion</h3>
+        <p className="insight-subtitle">Track recipes with active deletion timelines and cancel when needed</p>
         <div className="request-grid">
-          {approvedRecipes.map((recipe) => (
+          {scheduledRecipes.length === 0 && <p>No recipes are currently scheduled for deletion.</p>}
+          {scheduledRecipes.map((recipe) => (
             <div className="request-card" key={recipe._id}>
               <h4>{recipe.name}</h4>
               <p>By: {recipe.createdBy}</p>
-              <p>⏱️ {recipe.prepTime || 0} mins · 🍽️ {recipe.servings || 0} servings</p>
-              {recipe.isDeletionScheduled ? (
-                <p className="REJECTED">Deletion scheduled for {new Date(recipe.deletionScheduledFor).toLocaleString()}</p>
-              ) : (
-                <button className="reject-btn" onClick={() => setScheduleTarget(recipe)}>
-                  Schedule Delete
+              <p>Delete on: {new Date(recipe.deletionScheduledFor).toLocaleString()}</p>
+              <p>Reason: {recipe.deletionReason || "No reason provided"}</p>
+              <div className="actions">
+                <button className="rate-btn" onClick={() => navigate(`/recipe/${recipe._id}`)}>
+                  View Full Recipe
                 </button>
-              )}
+                <button className="approve-btn" onClick={() => cancelScheduledDelete(recipe._id)}>
+                  Cancel Deletion
+                </button>
+              </div>
             </div>
           ))}
         </div>
-
-        {scheduleTarget && (
-          <div className="reject-modal">
-            <div className="reject-modal-card">
-              <h3>Schedule Delete: {scheduleTarget.name}</h3>
-              <textarea
-                placeholder="Reason to notify user"
-                value={deleteReason}
-                onChange={(e) => setDeleteReason(e.target.value)}
-              />
-              <input
-                type="number"
-                value={deleteHours}
-                onChange={(e) => setDeleteHours(e.target.value)}
-                placeholder="Delete after hours"
-              />
-              <div className="actions">
-                <button className="reject-btn" onClick={scheduleRecipeDelete}>Confirm Schedule</button>
-                <button className="rate-btn" onClick={() => setScheduleTarget(null)}>Cancel</button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     );
   }
 
   return (
     <div className="admin-container">
-
       <h2>Admin Requests</h2>
 
       <div className="tabs">
@@ -232,7 +188,6 @@ export default function AdminDashboard() {
       </div>
 
       <div className="request-grid">
-
         {requests.length === 0 && (
           <p>No requests found</p>
         )}
@@ -247,7 +202,6 @@ export default function AdminDashboard() {
             view={(req) => setSelectedRequest(req)}
           />
         ))}
-
       </div>
 
       {selectedRequest && (
@@ -297,7 +251,6 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
-
     </div>
   );
 }

@@ -3,7 +3,6 @@ import { Link, useNavigate } from "react-router-dom";
 import API from "../services/api";
 
 export default function Register() {
-
   const navigate = useNavigate();
   const [data, setData] = useState({
     username: "",
@@ -24,9 +23,12 @@ export default function Register() {
   }
 
   return (
-    <div className="auth-container">
+    <div className="auth-container auth-hero">
+      <div className="auth-backdrop" aria-hidden="true" />
+
       <form className="auth-card" onSubmit={handleRegister}>
         <h2>Create Account</h2>
+        <p className="auth-subtitle">Join Recipe Hub to publish, review, and collaborate on recipes.</p>
 
         <input
           placeholder="Username"
@@ -51,9 +53,9 @@ export default function Register() {
           required
         />
 
-        <button type="submit">Register</button>
+        <button type="submit" className="auth-submit-btn">Register</button>
 
-        <p style={{ marginTop: "8px" }}>
+        <p className="auth-switch-text">
           Already have an account? <Link to="/login">Login</Link>
         </p>
       </form>

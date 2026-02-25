@@ -11,6 +11,8 @@ export default function RecipeCard({
   const navigate = useNavigate();
   const avgRating = Number(recipe.avgRating || 0).toFixed(1);
   const deletedAuthor = isDeletedUser(recipe.createdBy);
+  const likedBy = Array.isArray(recipe.likedBy) ? recipe.likedBy : [];
+  const isLiked = Boolean(currentUsername) && likedBy.includes(currentUsername);
 
   const myRating = Array.isArray(recipe.ratings)
     ? recipe.ratings.find((r) => r.username === currentUsername)?.value || 0
@@ -63,7 +65,24 @@ export default function RecipeCard({
       </p>
 
       <p className="meta-row">⏱️ {recipe.prepTime || 0} mins · 🍽️ Serves {recipe.servings || 0}</p>
-      <p className="meta-row">❤️ {recipe.likes || 0} · ⭐ {avgRating} ({recipe.ratingCount || 0})</p>
+
+      <div className="engagement-row" onClick={(e) => e.stopPropagation()}>
+        <div className="like-inline">
+          <button
+            className={`heart-btn ${isLiked ? "liked" : ""}`}
+            aria-label={isLiked ? "Unlike recipe" : "Like recipe"}
+            onClick={() => likeRecipe(recipe._id)}
+          >
+            ♥
+          </button>
+          <span className="meta-row">{recipe.likes || 0}</span>
+        </div>
+
+        <div className="rating-inline">
+          <span>⭐ {avgRating}</span>
+          <span className="meta-row">({recipe.ratingCount || 0})</span>
+        </div>
+      </div>
 
       <div className="star-row" onClick={(e) => e.stopPropagation()}>
         {[1, 2, 3, 4, 5].map((star) => (
@@ -76,19 +95,6 @@ export default function RecipeCard({
           </button>
         ))}
       </div>
-
-      <div className="actions">
-        <button
-          className="like-btn"
-          onClick={(e) => {
-            e.stopPropagation();
-            likeRecipe(recipe._id);
-          }}
-        >
-          ❤️ Like
-        </button>
-      </div>
-
     </div>
   );
 }

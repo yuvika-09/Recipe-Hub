@@ -289,6 +289,7 @@ router.put("/like/:id", async (req, res) => {
 
   res.json({
     likes: mapped.likes,
+    likedBy: recipe.likedBy,
     avgRating: mapped.avgRating,
     ratingCount: mapped.ratingCount
   });
@@ -362,6 +363,19 @@ router.get("/admin/reported", async (_req, res) => {
     .lean();
 
   res.json(recipes.map(buildRecipeResponse));
+});
+
+router.put("/admin/reported/:id/ignore", async (req, res) => {
+  const recipe = await Recipe.findById(req.params.id);
+
+  if (!recipe) {
+    return res.status(404).send("Recipe not found");
+  }
+
+  recipe.reportEntries = [];
+  await recipe.save();
+
+  res.json({ message: "Recipe reports ignored" });
 });
 
 router.post("/save", async (req, res) => {

@@ -111,7 +111,7 @@ export default function RecipeDetails() {
     }
   }
 
-  if (!recipe || !draft) return <p>Loading...</p>;
+  if (!recipe || !draft) return <p>Recipe not found...</p>;
 
   const isOwner = user?.username === recipe.createdBy;
   const isAdmin = user?.role === "ADMIN";
@@ -208,7 +208,7 @@ export default function RecipeDetails() {
           </button>
         </div>
       )}
-      
+
 {!isOwner && !isAdmin && (
         <div className="actions" style={{ marginTop: "16px" }}>
           <button className="reject-btn" onClick={reportRecipe}>

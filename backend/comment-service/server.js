@@ -66,6 +66,19 @@ app.get("/comments/admin/reported", async (_req, res) => {
   res.json(reportedComments);
 });
 
+app.put("/comments/admin/reported/:id/ignore", async (req, res) => {
+  const comment = await Comment.findById(req.params.id);
+
+  if (!comment) {
+    return res.status(404).send("Comment not found");
+  }
+
+  comment.reports = [];
+  await comment.save();
+
+  res.json({ message: "Comment reports ignored" });
+});
+
 app.get("/comments/:recipeId", async (req, res) => {
   const data = await Comment.find({
     recipeId: req.params.recipeId
@@ -144,6 +157,5 @@ app.patch("/comments/internal/anonymize-user/:username", async (req, res) => {
 
   res.json({ message: "Comments anonymized" });
 });
-
 
 app.listen(process.env.COMMENT_PORT, () => console.log("Comment service running"));

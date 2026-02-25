@@ -118,6 +118,15 @@ export default function AdminDashboard() {
     fetchStats();
   }
 
+  async function ignoreRecipeReport(recipeId) {
+    await API.put(`/recipes/admin/reported/${recipeId}/ignore`);
+    fetchStats();
+  }
+
+  async function ignoreCommentReport(commentId) {
+    await API.put(`/comments/admin/reported/${commentId}/ignore`);
+    fetchStats();
+  }
   if (isUsersPage) {
     return (
       <div className="admin-container">
@@ -185,7 +194,7 @@ export default function AdminDashboard() {
             </div>
           ))}
         </div>
-        
+
         <h3 style={{ marginTop: "22px" }}>Reported Recipes</h3>
         <div className="request-grid">
           {reportedRecipes.length === 0 && <p>No reported recipes.</p>}
@@ -193,9 +202,19 @@ export default function AdminDashboard() {
             <div className="request-card" key={`report-recipe-${recipe._id}`}>
               <h4>{recipe.name}</h4>
               <p>Reports: {recipe.reportEntries?.length || 0}</p>
+              <div className="report-reasons">
+                {(recipe.reportEntries || []).map((entry, index) => (
+                  <p className="meta-row" key={`${recipe._id}-report-${index}`}>
+                    <b>{displayUsername(entry.reportedBy)}:</b> {entry.reason}
+                  </p>
+                ))}
+              </div>
               <div className="actions">
                 <button className="rate-btn" onClick={() => navigate(`/recipe/${recipe._id}`)}>
                   Review Recipe
+                </button>
+                <button className="approve-btn" onClick={() => ignoreRecipeReport(recipe._id)}>
+                  Ignore Reports
                 </button>
               </div>
             </div>
@@ -210,9 +229,19 @@ export default function AdminDashboard() {
               <p><b>By:</b> {displayUsername(comment.username)}</p>
               <p>{comment.text}</p>
               <p>Reports: {comment.reports?.length || 0}</p>
+              <div className="report-reasons">
+                {(comment.reports || []).map((entry, index) => (
+                  <p className="meta-row" key={`${comment._id}-report-${index}`}>
+                    <b>{displayUsername(entry.reportedBy)}:</b> {entry.reason}
+                  </p>
+                ))}
+              </div>
               <div className="actions">
                 <button className="rate-btn" onClick={() => navigate(`/recipe/${comment.recipeId}`)}>
                   Open Recipe
+                </button>
+                <button className="approve-btn" onClick={() => ignoreCommentReport(comment._id)}>
+                  Ignore Reports
                 </button>
                 {!comment.isDeleted && (
                   <button className="reject-btn" onClick={() => deleteComment(comment._id)}>

@@ -5,6 +5,12 @@
   font-family: "Inter", "Segoe UI", sans-serif;
 }
 
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
 :root {
   --bg: #f3f5f8;
   --surface: #ffffff;
@@ -162,6 +168,47 @@ input {
 
 .recipe-card:hover {
   transform: translateY(-4px);
+}
+
+.recipe-card h3 {
+  margin-top: 10px;
+  margin-bottom: 6px;
+}
+
+.engagement-row {
+  margin-top: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.like-inline,
+.rating-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.heart-btn {
+  border: 1px solid #fbcfe8;
+  background: #ffffff;
+  color: #db2777;
+  border-radius: 10px;
+  width: 38px;
+  height: 34px;
+  font-size: 20px;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+}
+
+.heart-btn.liked {
+  background: #fce7f3;
+}
+
+.rating-inline {
+  font-weight: 600;
 }
 
 .image-placeholder {
@@ -502,6 +549,16 @@ button:disabled {
 .deleted-comment {
   color: var(--muted);
   font-style: italic;
+}
+
+.report-reasons {
+  margin-top: 8px;
+  display: grid;
+  gap: 6px;
+}
+
+.report-reasons .meta-row {
+  font-size: 14px;
 }
 
 .site-footer {

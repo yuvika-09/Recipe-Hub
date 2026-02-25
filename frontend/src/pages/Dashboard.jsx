@@ -76,18 +76,20 @@ export default function Dashboard() {
       username: user.username
     });
 
-    setFiltered(prev =>
-      prev.map(r =>
-        r._id === id
-          ? {
-            ...r,
-            likes: res.data.likes,
-            avgRating: res.data.avgRating,
-            ratingCount: res.data.ratingCount
-          }
-          : r
-      )
+    const updateRecipe = (r) => (
+      r._id === id
+        ? {
+          ...r,
+          likes: res.data.likes,
+          likedBy: res.data.likedBy,
+          avgRating: res.data.avgRating,
+          ratingCount: res.data.ratingCount
+        }
+        : r
     );
+
+    setRecipes((prev) => prev.map(updateRecipe));
+    setFiltered((prev) => prev.map(updateRecipe));
   }
 
   async function rateRecipe(id, rating) {
@@ -101,18 +103,19 @@ export default function Dashboard() {
       rating
     });
 
-    setFiltered(prev =>
-      prev.map(r =>
-        r._id === id
-          ? {
-            ...r,
-            avgRating: res.data.avgRating,
-            ratingCount: res.data.ratingCount,
-            ratings: res.data.ratings
-          }
-          : r
-      )
+    const updateRecipe = (r) => (
+      r._id === id
+        ? {
+          ...r,
+          avgRating: res.data.avgRating,
+          ratingCount: res.data.ratingCount,
+          ratings: res.data.ratings
+        }
+        : r
     );
+
+    setRecipes((prev) => prev.map(updateRecipe));
+    setFiltered((prev) => prev.map(updateRecipe));
   }
 
   return (

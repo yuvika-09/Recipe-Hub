@@ -11,44 +11,48 @@ export default function MyRecipes() {
 
   const [requests, setRequests] = useState([]);
   const [myRecipes, setMyRecipes] = useState([]);
-  const [activeTab, setActiveTab] = useState("RECIPES");
-  const [now, setNow] = useState(Date.now());
+const [likedRecipes, setLikedRecipes] = useState([]);
+  const tabFromQuery = searchParams.get("tab");
+  const initialTab = ["REQUESTS", "LIKED"].includes(tabFromQuery) ? tabFromQuery : "RECIPES";
+  const [activeTab, setActiveTab] = useState(initialTab);
+  const [now, setNow] = useState(() => Date.now());
 
-  // =============================
   // Load Data
-  // =============================
-  const loadData = useCallback(async () => {
+const loadData = useCallback(async () => {
     if (!user) return;
 
     try {
-      const [requestRes, recipeRes] = await Promise.all([
+      const [requestRes, recipeRes, likedRes] = await Promise.all([
         API.get(`/recipes/requests/user/${user.username}`),
-        API.get(`/recipes/user/${user.username}`)
+        API.get(`/recipes/user/${user.username}`),
+        API.get(`/recipes/liked/${user.username}`)
       ]);
 
       setRequests(requestRes.data);
       setMyRecipes(recipeRes.data);
+      setLikedRecipes(likedRes.data);
     } catch (err) {
       console.error("Error loading data:", err);
     }
   }, [user]);
 
-  // =============================
   // Initial load + polling
-  // =============================
   useEffect(() => {
-    loadData();
+    const initialLoadTimer = setTimeout(() => {
+      loadData();
+    }, 0);
 
     const intervalId = setInterval(() => {
       loadData();
     }, 8000);
 
-    return () => clearInterval(intervalId);
+    return () => {
+      clearTimeout(initialLoadTimer);
+      clearInterval(intervalId);
+    };
   }, [loadData]);
 
-  // =============================
   // Live countdown timer
-  // =============================
   useEffect(() => {
     const timerId = setInterval(() => {
       setNow(Date.now());
@@ -57,29 +61,21 @@ export default function MyRecipes() {
     return () => clearInterval(timerId);
   }, []);
 
-  // =============================
-  // Handle ?tab=REQUESTS
-  // =============================
-  useEffect(() => {
-    const tab = searchParams.get("tab");
-    if (tab === "REQUESTS") {
-      setActiveTab("REQUESTS");
-    }
-  }, [searchParams]);
-
-  // =============================
   // Handle new request from navigation state
-  // =============================
   useEffect(() => {
     if (location.state?.newRequest) {
-      setRequests((prev) => [location.state.newRequest, ...prev]);
-      setActiveTab("REQUESTS");
+      const timerId = setTimeout(() => {
+        setRequests((prev) => [location.state.newRequest, ...prev]);
+        setActiveTab("REQUESTS");
+      }, 0);
+
+      return () => clearTimeout(timerId);
     }
+
+    return undefined;
   }, [location.state]);
 
-  // =============================
   // Countdown Formatter
-  // =============================
   function formatCountdown(dateValue) {
     if (!dateValue) return null;
 
@@ -100,9 +96,7 @@ export default function MyRecipes() {
     return `${hours}h ${minutes}m ${seconds}s`;
   }
 
-  // =============================
   // Request Delete
-  // =============================
   async function requestDelete(recipeId) {
     const reason = prompt("Reason for deletion request:");
 
@@ -133,6 +127,13 @@ export default function MyRecipes() {
           onClick={() => setActiveTab("RECIPES")}
         >
           My Approved Recipes
+        </button>
+
+        <button
+          className={activeTab === "LIKED" ? "active" : ""}
+          onClick={() => setActiveTab("LIKED")}
+        >
+          My Liked Recipes
         </button>
 
         <button
@@ -207,6 +208,30 @@ export default function MyRecipes() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* ================= LIKED TAB ================= */}
+      {activeTab === "LIKED" && (
+        <div className="request-grid">
+          {likedRecipes.length === 0 && <p>You have not liked any recipes yet.</p>}
+
+          {likedRecipes.map((recipe) => (
+            <div className="request-card" key={`liked-${recipe._id}`}>
+              <h3>{recipe.name}</h3>
+              <p>By: {recipe.createdBy}</p>
+              <p>⏱️ {recipe.prepTime || 0} mins · 🍽️ {recipe.servings || 0} servings</p>
+              <p>❤️ {recipe.likes || 0} · ⭐ {Number(recipe.avgRating || 0).toFixed(1)} ({recipe.ratingCount || 0})</p>
+              <div className="actions">
+                <button
+                  className="rate-btn"
+                  onClick={() => navigate(`/recipe/${recipe._id}`)}
+                >
+                  Open Recipe
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 

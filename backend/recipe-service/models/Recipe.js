@@ -23,6 +23,14 @@ const recipeSchema = new mongoose.Schema({
       value: Number
     }
   ],
+  reportEntries: [{
+    reportedBy: String,
+    reason: String,
+    createdAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   isDeletionScheduled: {
     type: Boolean,
     default: false

@@ -51,10 +51,8 @@ io.on("connection", (socket) => {
 });
 
 
-/* ======================
-   REDIS SUBSCRIBER
-====================== */
-const subscriber = redis.createClient();
+/* REDIS SUBSCRIBER*/
+const subscriber = redis.createClient({ url: `redis://${process.env.REDIS_HOST || "localhost"}:6379` });
 
 subscriber.on("error", (err) => {
   console.error("Redis error:", err);

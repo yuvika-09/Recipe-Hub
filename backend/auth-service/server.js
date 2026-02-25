@@ -14,6 +14,9 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
+const RECIPE_HOST = process.env.RECIPE_HOST || "localhost";
+const COMMENT_HOST = process.env.COMMENT_HOST || "localhost";
+
 mongoose.connect(process.env.MONGO_URL_AUTH);
 
 const User = mongoose.model("User", {
@@ -120,8 +123,8 @@ app.delete("/users/:username", async (req, res) => {
     return res.status(404).send("User not found");
   }
 
-  const recipeServiceUrl = `http://localhost:${process.env.RECIPE_PORT}/recipes/internal/anonymize-user/${encodeURIComponent(username)}`;
-  const commentServiceUrl = `http://localhost:${process.env.COMMENT_PORT}/comments/internal/anonymize-user/${encodeURIComponent(username)}`;
+  const recipeServiceUrl = `http://${RECIPE_HOST}:${process.env.RECIPE_PORT}/recipes/internal/anonymize-user/${encodeURIComponent(username)}`;
+  const commentServiceUrl = `http://${COMMENT_HOST}:${process.env.COMMENT_PORT}/comments/internal/anonymize-user/${encodeURIComponent(username)}`;
 
   const [recipeAnonymizeRes, commentAnonymizeRes] = await Promise.all([
     fetch(recipeServiceUrl, { method: "PATCH" }),

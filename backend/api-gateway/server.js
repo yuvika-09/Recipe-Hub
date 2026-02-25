@@ -8,10 +8,16 @@ const app = express();
 
 app.use(cors());
 
+const AUTH_HOST = process.env.AUTH_HOST || "localhost";
+const RECIPE_HOST = process.env.RECIPE_HOST || "localhost";
+const COMMENT_HOST = process.env.COMMENT_HOST || "localhost";
+const NOTIFY_HOST = process.env.NOTIFY_HOST || "localhost";
+
+
 /* ---------- AUTH ---------- */
 app.use("/auth",
   createProxyMiddleware({
-    target: `http://localhost:${process.env.AUTH_PORT}`,
+    target: `http://${AUTH_HOST}:${process.env.AUTH_PORT}`,
     changeOrigin: true,
   })
 );
@@ -19,7 +25,7 @@ app.use("/auth",
 /* ---------- RECIPES ---------- */
 app.use("/recipes",
   createProxyMiddleware({
-    target: `http://localhost:${process.env.RECIPE_PORT}/recipes`,
+    target: `http://${RECIPE_HOST}:${process.env.RECIPE_PORT}/recipes`,
     changeOrigin: true
   })
 );
@@ -28,7 +34,7 @@ app.use("/recipes",
 /* ---------- COMMENTS ---------- */
 app.use("/comments",
   createProxyMiddleware({
-    target: `http://localhost:${process.env.COMMENT_PORT}/comments`,
+    target: `http://${COMMENT_HOST}:${process.env.COMMENT_PORT}/comments`,
     changeOrigin: true,
   })
 );
@@ -36,7 +42,7 @@ app.use("/comments",
 /* ---------- NOTIFICATIONS ---------- */
 app.use("/notifications",
   createProxyMiddleware({
-    target: `http://localhost:${process.env.NOTIFY_PORT}/notifications`,
+    target: `http://${NOTIFY_HOST}:${process.env.NOTIFY_PORT}/notifications`,
     changeOrigin: true,
   })
 );

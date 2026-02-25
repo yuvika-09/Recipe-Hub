@@ -93,6 +93,24 @@ export default function RecipeDetails() {
     setDraft(refreshed.data);
   }
 
+  async function reportRecipe() {
+    if (!user) return;
+
+    const reason = prompt("Why are you reporting this recipe?");
+    if (!reason || !reason.trim()) return;
+
+    try {
+      await API.post(`/recipes/${id}/report`, {
+        reportedBy: user.username,
+        reason
+      });
+
+      alert("Recipe reported successfully");
+    } catch (err) {
+      alert(err?.response?.data || "Failed to report recipe");
+    }
+  }
+
   if (!recipe || !draft) return <p>Loading...</p>;
 
   const isOwner = user?.username === recipe.createdBy;
@@ -187,6 +205,14 @@ export default function RecipeDetails() {
             onClick={requestDelete}
           >
             Request Delete
+          </button>
+        </div>
+      )}
+      
+{!isOwner && !isAdmin && (
+        <div className="actions" style={{ marginTop: "16px" }}>
+          <button className="reject-btn" onClick={reportRecipe}>
+            Report Recipe
           </button>
         </div>
       )}

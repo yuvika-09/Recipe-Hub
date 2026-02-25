@@ -3,6 +3,7 @@ import { useContext } from "react";
 import { AuthContext } from "./context/AuthContextObject";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Navbar from "./components/Navbar";
+import Footer from "./components/Footer";
 
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -19,73 +20,78 @@ function App() {
 
   return (
     <BrowserRouter>
-      <Navbar />
-      <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/recipe/:id" element={<RecipeDetails />} />
-        <Route path="/users/:username" element={<UserPublicProfile />} />
+      <div className="app-shell">
+        <Navbar />
+        <main className="app-main">
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/recipe/:id" element={<RecipeDetails />} />
+            <Route path="/users/:username" element={<UserPublicProfile />} />
 
-        <Route
-          path="/myrecipes"
-          element={
-            <ProtectedRoute user={user}>
-              <MyRecipes />
-            </ProtectedRoute>
-          }
-        />
+            <Route
+              path="/myrecipes"
+              element={
+                <ProtectedRoute user={user}>
+                  <MyRecipes />
+                </ProtectedRoute>
+              }
+            />
 
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute role="USER" user={user}>
-              <Profile />
-            </ProtectedRoute>
-          }
-        />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute role="USER" user={user}>
+                  <Profile />
+                </ProtectedRoute>
+              }
+            />
 
-        <Route
-          path="/admin"
-          element={<Navigate to="/admin/home" replace />}
-        />
+            <Route
+              path="/admin"
+              element={<Navigate to="/admin/home" replace />}
+            />
 
-        <Route
-          path="/admin/home"
-          element={
-            <ProtectedRoute role="ADMIN" user={user}>
-              <AdminDashboard />
-            </ProtectedRoute>
-          }
-        />
+            <Route
+              path="/admin/home"
+              element={
+                <ProtectedRoute role="ADMIN" user={user}>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
 
-        <Route
-          path="/admin/requests"
-          element={
-            <ProtectedRoute role="ADMIN" user={user}>
-              <AdminDashboard />
-            </ProtectedRoute>
-          }
-        />
+            <Route
+              path="/admin/requests"
+              element={
+                <ProtectedRoute role="ADMIN" user={user}>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
 
-        <Route
-          path="/admin/users"
-          element={
-            <ProtectedRoute role="ADMIN" user={user}>
-              <AdminDashboard />
-            </ProtectedRoute>
-          }
-        />
+            <Route
+              path="/admin/users"
+              element={
+                <ProtectedRoute role="ADMIN" user={user}>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
 
-        <Route
-          path="/add"
-          element={
-            <ProtectedRoute role="USER" user={user}>
-              <AddRecipe />
-            </ProtectedRoute>
-          }
-        />
-      </Routes>
+            <Route
+              path="/add"
+              element={
+                <ProtectedRoute role="USER" user={user}>
+                  <AddRecipe />
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </main>
+        <Footer />
+      </div>
     </BrowserRouter>
   );
 }

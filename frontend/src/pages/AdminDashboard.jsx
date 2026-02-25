@@ -21,6 +21,8 @@ export default function AdminDashboard() {
     usersCount: 0
   });
   const [approvedRecipes, setApprovedRecipes] = useState([]);
+  const [reportedRecipes, setReportedRecipes] = useState([]);
+  const [reportedComments, setReportedComments] = useState([]);
 
   const isUsersPage = location.pathname.includes("/admin/users");
   const isRequestsPage = location.pathname.includes("/admin/requests");
@@ -37,10 +39,12 @@ export default function AdminDashboard() {
   }, []);
 
   const fetchStats = useCallback(async () => {
-    const [statsRes, usersRes, approvedRes] = await Promise.all([
+    const [statsRes, usersRes, approvedRes, reportedRecipesRes, reportedCommentsRes] = await Promise.all([
       API.get("/recipes/stats/dashboard"),
       API.get("/auth/users"),
-      API.get("/recipes/admin/approved")
+      API.get("/recipes/admin/approved"),
+      API.get("/recipes/admin/reported"),
+      API.get("/comments/admin/reported")
     ]);
 
     setStats({
@@ -49,6 +53,8 @@ export default function AdminDashboard() {
     });
 
     setApprovedRecipes(approvedRes.data);
+    setReportedRecipes(reportedRecipesRes.data);
+    setReportedComments(reportedCommentsRes.data);
   }, []);
 
   useEffect(() => {
@@ -98,6 +104,17 @@ export default function AdminDashboard() {
 
   async function cancelScheduledDelete(recipeId) {
     await API.put(`/recipes/admin/cancel-delete/${recipeId}`);
+    fetchStats();
+  }
+
+  async function deleteComment(commentId) {
+    await API.delete(`/comments/${commentId}`, {
+      data: {
+        requestedBy: "admin",
+        role: "ADMIN"
+      }
+    });
+
     fetchStats();
   }
 
@@ -164,6 +181,44 @@ export default function AdminDashboard() {
                 <button className="approve-btn" onClick={() => cancelScheduledDelete(recipe._id)}>
                   Cancel Deletion
                 </button>
+              </div>
+            </div>
+          ))}
+        </div>
+        
+        <h3 style={{ marginTop: "22px" }}>Reported Recipes</h3>
+        <div className="request-grid">
+          {reportedRecipes.length === 0 && <p>No reported recipes.</p>}
+          {reportedRecipes.map((recipe) => (
+            <div className="request-card" key={`report-recipe-${recipe._id}`}>
+              <h4>{recipe.name}</h4>
+              <p>Reports: {recipe.reportEntries?.length || 0}</p>
+              <div className="actions">
+                <button className="rate-btn" onClick={() => navigate(`/recipe/${recipe._id}`)}>
+                  Review Recipe
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <h3 style={{ marginTop: "22px" }}>Reported Comments</h3>
+        <div className="request-grid">
+          {reportedComments.length === 0 && <p>No reported comments.</p>}
+          {reportedComments.map((comment) => (
+            <div className="request-card" key={`report-comment-${comment._id}`}>
+              <p><b>By:</b> {displayUsername(comment.username)}</p>
+              <p>{comment.text}</p>
+              <p>Reports: {comment.reports?.length || 0}</p>
+              <div className="actions">
+                <button className="rate-btn" onClick={() => navigate(`/recipe/${comment.recipeId}`)}>
+                  Open Recipe
+                </button>
+                {!comment.isDeleted && (
+                  <button className="reject-btn" onClick={() => deleteComment(comment._id)}>
+                    Delete Comment
+                  </button>
+                )}
               </div>
             </div>
           ))}

@@ -18,7 +18,7 @@ app.use(cors());
 
 mongoose.connect(process.env.MONGO_URL_RECIPES);
 
-const publisher = redis.createClient();
+const publisher = redis.createClient({ url: `redis://${process.env.REDIS_HOST || "localhost"}:6379` });
 publisher.connect().catch(err =>
   console.error("Redis connect error:", err)
 );
@@ -323,6 +323,45 @@ router.put("/rate/:id", async (req, res) => {
     ratingCount: mapped.ratingCount,
     ratings: recipe.ratings
   });
+});
+
+router.post("/:id/report", async (req, res) => {
+  const reportedBy = String(req.body.reportedBy || "").trim();
+  const reason = String(req.body.reason || "").trim();
+
+  if (!reportedBy || !reason) {
+    return res.status(400).send("Reporter and reason are required");
+  }
+
+  const recipe = await Recipe.findById(req.params.id);
+
+  if (!recipe) {
+    return res.status(404).send("Recipe not found");
+  }
+
+  const reports = Array.isArray(recipe.reportEntries) ? recipe.reportEntries : [];
+  if (reports.some((entry) => entry.reportedBy === reportedBy)) {
+    return res.status(400).send("You have already reported this recipe");
+  }
+
+  recipe.reportEntries = [...reports, { reportedBy, reason }];
+  await recipe.save();
+
+  await sendNotification(
+    "admin",
+    `${reportedBy} reported recipe ${recipe.name}`,
+    "RECIPE_REPORTED"
+  );
+
+  res.json({ message: "Recipe reported successfully" });
+});
+
+router.get("/admin/reported", async (_req, res) => {
+  const recipes = await Recipe.find({ "reportEntries.0": { $exists: true } })
+    .sort({ updatedAt: -1 })
+    .lean();
+
+  res.json(recipes.map(buildRecipeResponse));
 });
 
 router.post("/save", async (req, res) => {

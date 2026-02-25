@@ -4,7 +4,6 @@ import { AuthContext } from "../context/AuthContextObject";
 import { displayUsername } from "../utils/UserDisplay";
 
 export default function Comments({ recipeId }) {
-
   const { user } = useContext(AuthContext);
   const [comments, setComments] = useState([]);
   const [text, setText] = useState("");
@@ -36,14 +35,13 @@ export default function Comments({ recipeId }) {
     if (!value || !user) return;
 
     try {
-      const res = await API.post("/comments", {
+      await API.post("/comments", {
         recipeId,
         username: user.username,
         text: value,
         parentId: null
       });
 
-      setComments(prev => [...prev, res.data]);
       setText("");
       loadComments();
     } catch (err) {
@@ -56,14 +54,13 @@ export default function Comments({ recipeId }) {
     if (!value || !user) return;
 
     try {
-      const res = await API.post("/comments", {
+      await API.post("/comments", {
         recipeId,
         username: user.username,
         text: value,
         parentId
       });
 
-      setComments(prev => [...prev, res.data]);
       setReplyText("");
       setReplyTo(null);
       loadComments();
@@ -72,7 +69,45 @@ export default function Comments({ recipeId }) {
     }
   }
 
+  async function deleteComment(commentId) {
+    if (!user) return;
+
+    const ok = window.confirm("Delete this comment?");
+    if (!ok) return;
+
+    try {
+      await API.delete(`/comments/${commentId}`, {
+        data: {
+          requestedBy: user.username,
+          role: user.role
+        }
+      });
+      loadComments();
+    } catch (err) {
+      alert(err?.response?.data || "Failed to delete comment");
+    }
+  }
+
+  async function reportComment(commentId) {
+    if (!user) return;
+
+    const reason = prompt("Why are you reporting this comment?");
+    if (!reason || !reason.trim()) return;
+
+    try {
+      await API.post(`/comments/${commentId}/report`, {
+        reportedBy: user.username,
+        reason
+      });
+      alert("Comment reported successfully");
+      loadComments();
+    } catch (err) {
+      alert(err?.response?.data || "Failed to report comment");
+    }
+  }
+
   function openReply(comment) {
+    if (comment.isDeleted) return;
     setReplyTo(comment._id);
     setReplyText(`@${displayUsername(comment.username)} `);
   }
@@ -80,36 +115,54 @@ export default function Comments({ recipeId }) {
   function renderCommentThread(parentKey = "root", level = 0) {
     const list = commentsByParent[parentKey] || [];
 
-    return list.map((comment) => (
-      <div
-        key={comment._id || `${comment.username}-${comment.text}-${comment.createdAt}`}
-        className={level === 0 ? "comment-item" : "reply-item"}
-      >
-        <strong>{displayUsername(comment.username)}</strong>
-        <p>{comment.text}</p>
+    return list.map((comment) => {
+      const canDelete = user && (user.role === "ADMIN" || user.username === comment.username);
 
-        <button className="rate-btn" onClick={() => openReply(comment)} disabled={!user}>
-          Reply
-        </button>
+      return (
+        <div
+          key={comment._id || `${comment.username}-${comment.text}-${comment.createdAt}`}
+          className={level === 0 ? "comment-item" : "reply-item"}
+        >
+          <strong>{displayUsername(comment.username)}</strong>
+          <p className={comment.isDeleted ? "deleted-comment" : ""}>{comment.text}</p>
 
-        {replyTo === comment._id && (
-          <div className="reply-box">
-            <textarea
-              value={replyText}
-              placeholder="Write a reply..."
-              onChange={(e) => setReplyText(e.target.value)}
-            />
-            <button className="approve-btn" onClick={() => addReply(comment._id)}>
-              Post Reply
+          <div className="actions">
+            <button className="rate-btn" onClick={() => openReply(comment)} disabled={!user || comment.isDeleted}>
+              Reply
             </button>
-          </div>
-        )}
 
-        <div className="reply-list">
-          {renderCommentThread(String(comment._id), level + 1)}
+            {user && !comment.isDeleted && (
+              <button className="tiny-btn" onClick={() => reportComment(comment._id)}>
+                Report
+              </button>
+            )}
+
+            {canDelete && !comment.isDeleted && (
+              <button className="reject-btn" onClick={() => deleteComment(comment._id)}>
+                Delete
+              </button>
+            )}
+          </div>
+
+          {replyTo === comment._id && (
+            <div className="reply-box">
+              <textarea
+                value={replyText}
+                placeholder="Write a reply..."
+                onChange={(e) => setReplyText(e.target.value)}
+              />
+              <button className="approve-btn" onClick={() => addReply(comment._id)}>
+                Post Reply
+              </button>
+            </div>
+          )}
+
+          <div className="reply-list">
+            {renderCommentThread(String(comment._id), level + 1)}
+          </div>
         </div>
-      </div>
-    ));
+      );
+    });
   }
 
   return (

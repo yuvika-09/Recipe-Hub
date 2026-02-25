@@ -488,3 +488,31 @@ button:disabled {
 .admin-delete-panel {
   margin-top: 18px;
 }
+
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-main {
+  flex: 1;
+}
+
+.deleted-comment {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.site-footer {
+  margin-top: 24px;
+  border-top: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.86);
+}
+
+.footer-inner {
+  padding: 16px 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+}

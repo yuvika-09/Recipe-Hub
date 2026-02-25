@@ -13,7 +13,7 @@ require("dotenv").config({
 
 mongoose.connect(process.env.MONGO_URL_COMMENTS);
 
-const Comment = mongoose.model("Comment", {
+const commentSchema = new mongoose.Schema({
   recipeId: String,
   username: String,
   text: String,
@@ -21,11 +21,26 @@ const Comment = mongoose.model("Comment", {
     type: mongoose.Schema.Types.ObjectId,
     default: null
   },
+  isDeleted: {
+    type: Boolean,
+    default: false
+  },
+  deletedAt: Date,
+  reports: [{
+    reportedBy: String,
+    reason: String,
+    createdAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   createdAt: {
     type: Date,
     default: Date.now
   }
 });
+
+const Comment = mongoose.model("Comment", commentSchema);
 
 app.post("/comments", async (req, res) => {
   const text = String(req.body.text || "").trim();
@@ -43,12 +58,76 @@ app.post("/comments", async (req, res) => {
   res.json(c);
 });
 
+app.get("/comments/admin/reported", async (_req, res) => {
+  const reportedComments = await Comment.find({
+    "reports.0": { $exists: true }
+  }).sort({ createdAt: -1 });
+
+  res.json(reportedComments);
+});
+
 app.get("/comments/:recipeId", async (req, res) => {
   const data = await Comment.find({
     recipeId: req.params.recipeId
   }).sort({ createdAt: 1 });
 
   res.json(data);
+});
+
+app.post("/comments/:id/report", async (req, res) => {
+  const reportedBy = String(req.body.reportedBy || "").trim();
+  const reason = String(req.body.reason || "").trim();
+
+  if (!reportedBy || !reason) {
+    return res.status(400).send("Reporter and reason are required");
+  }
+
+  const comment = await Comment.findById(req.params.id);
+
+  if (!comment) {
+    return res.status(404).send("Comment not found");
+  }
+
+  const alreadyReported = comment.reports.some((entry) => entry.reportedBy === reportedBy);
+
+  if (alreadyReported) {
+    return res.status(400).send("You have already reported this comment");
+  }
+
+  comment.reports.push({ reportedBy, reason });
+  await comment.save();
+
+  res.json({ message: "Comment reported successfully" });
+});
+
+app.delete("/comments/:id", async (req, res) => {
+  const requestedBy = String(req.body.requestedBy || "").trim();
+  const role = String(req.body.role || "").trim().toUpperCase();
+
+  if (!requestedBy) {
+    return res.status(400).send("requestedBy is required");
+  }
+
+  const comment = await Comment.findById(req.params.id);
+
+  if (!comment) {
+    return res.status(404).send("Comment not found");
+  }
+
+  const canDelete = role === "ADMIN" || comment.username === requestedBy;
+
+  if (!canDelete) {
+    return res.status(403).send("Not allowed to delete this comment");
+  }
+
+  comment.text = "This comment has been deleted.";
+  comment.isDeleted = true;
+  comment.deletedAt = new Date();
+  comment.reports = [];
+
+  await comment.save();
+
+  res.json({ message: "Comment deleted" });
 });
 
 app.patch("/comments/internal/anonymize-user/:username", async (req, res) => {

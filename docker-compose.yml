@@ -1,34 +1,81 @@
-version: "3"
+version: "3.9"
 
 services:
-
   mongodb:
-    image: mongo
+    image: mongo:7
     ports:
       - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    restart: unless-stopped
 
   redis:
-    image: redis
+    image: redis:7
+    restart: unless-stopped
+
+  auth-service:
+    build: ./backend/auth-service
+    env_file:
+      - .env
+    depends_on:
+      - mongodb
+    restart: unless-stopped
+
+  recipe-service:
+    build: ./backend/recipe-service
+    env_file:
+      - .env
+    environment:
+      DELETE_REQUEST_DELAY_HOURS: 24
+    depends_on:
+      - mongodb
+      - redis
+    restart: unless-stopped
+
+  comment-service:
+    build: ./backend/comment-service
+    env_file:
+      - .env
+    depends_on:
+      - mongodb
+    restart: unless-stopped
+
+  notification-service:
+    build: ./backend/notification-service
+    env_file:
+      - .env
+    depends_on:
+      - mongodb
+      - redis
+    restart: unless-stopped
 
   api-gateway:
     build: ./backend/api-gateway
     ports:
       - "5000:5000"
-
-  auth-service:
-    build: ./backend/auth-service
-
-  recipe-service:
-    build: ./backend/recipe-service
-
-  comment-service:
-    build: ./backend/comment-service
-
-  notification-service:
-    build: ./backend/notification-service
+    env_file:
+      - .env
+    environment:
+      AUTH_HOST: auth-service
+      RECIPE_HOST: recipe-service
+      COMMENT_HOST: comment-service
+      NOTIFY_HOST: notification-service
+    depends_on:
+      - auth-service
+      - recipe-service
+      - comment-service
+      - notification-service
+    restart: unless-stopped
 
   frontend:
     build: ./frontend
     ports:
       - "5173:5173"
+    environment:
+      VITE_API_URL: http://localhost:5000
+    depends_on:
+      - api-gateway
+    restart: unless-stopped
 
+volumes:
+  mongo_data:

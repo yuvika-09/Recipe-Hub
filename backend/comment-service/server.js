@@ -51,4 +51,20 @@ app.get("/comments/:recipeId", async (req, res) => {
   res.json(data);
 });
 
+app.patch("/comments/internal/anonymize-user/:username", async (req, res) => {
+  const username = String(req.params.username || "").trim();
+
+  if (!username || username === "admin") {
+    return res.status(400).send("Invalid username");
+  }
+
+  await Comment.updateMany(
+    { username },
+    { $set: { username: "__DELETED_USER__" } }
+  );
+
+  res.json({ message: "Comments anonymized" });
+});
+
+
 app.listen(process.env.COMMENT_PORT, () => console.log("Comment service running"));

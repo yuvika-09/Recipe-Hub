@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import API from "../services/api";
 import RequestCard from "../components/RequestCard";
+import { displayUsername } from "../utils/UserDisplay";
 
 export default function AdminDashboard() {
   const location = useLocation();
@@ -153,7 +154,7 @@ export default function AdminDashboard() {
           {scheduledRecipes.map((recipe) => (
             <div className="request-card" key={recipe._id}>
               <h4>{recipe.name}</h4>
-              <p>By: {recipe.createdBy}</p>
+              <p>By: {displayUsername(recipe.createdBy)}</p>
               <p>Delete on: {new Date(recipe.deletionScheduledFor).toLocaleString()}</p>
               <p>Reason: {recipe.deletionReason || "No reason provided"}</p>
               <div className="actions">

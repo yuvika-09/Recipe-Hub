@@ -108,15 +108,31 @@ app.get("/users/:username", async (req, res) => {
 });
 
 app.delete("/users/:username", async (req, res) => {
-  if (req.params.username === "admin") {
+  const username = String(req.params.username || "").trim();
+
+  if (username === "admin") {
     return res.status(400).send("Admin account cannot be deleted");
   }
 
-  const deleted = await User.findOneAndDelete({ username: req.params.username });
+  const existing = await User.findOne({ username });
 
-  if (!deleted) {
+  if (!existing) {
     return res.status(404).send("User not found");
   }
+
+  const recipeServiceUrl = `http://localhost:${process.env.RECIPE_PORT}/recipes/internal/anonymize-user/${encodeURIComponent(username)}`;
+  const commentServiceUrl = `http://localhost:${process.env.COMMENT_PORT}/comments/internal/anonymize-user/${encodeURIComponent(username)}`;
+
+  const [recipeAnonymizeRes, commentAnonymizeRes] = await Promise.all([
+    fetch(recipeServiceUrl, { method: "PATCH" }),
+    fetch(commentServiceUrl, { method: "PATCH" })
+  ]);
+
+  if (!recipeAnonymizeRes.ok || !commentAnonymizeRes.ok) {
+    return res.status(502).send("Failed to anonymize user content in dependent services");
+  }
+
+  await User.deleteOne({ username });
 
   res.send("User deleted");
 });

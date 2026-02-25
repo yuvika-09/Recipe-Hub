@@ -442,6 +442,35 @@ router.put("/admin/cancel-delete/:id", async (req, res) => {
   });
 });
 
+router.patch("/internal/anonymize-user/:username", async (req, res) => {
+  const username = String(req.params.username || "").trim();
+
+  if (!username || username === "admin") {
+    return res.status(400).send("Invalid username");
+  }
+
+  const replacement = "__DELETED_USER__";
+
+  await Recipe.updateMany(
+    { createdBy: username },
+    { $set: { createdBy: replacement } }
+  );
+
+  await Recipe.updateMany(
+    { likedBy: username },
+    { $set: { "likedBy.$[entry]": replacement } },
+    { arrayFilters: [{ entry: username }] }
+  );
+
+  await Recipe.updateMany(
+    { "ratings.username": username },
+    { $set: { "ratings.$[entry].username": replacement } },
+    { arrayFilters: [{ "entry.username": username }] }
+  );
+
+  res.json({ message: "Recipe ownership and interactions anonymized" });
+});
+
 router.get("/stats/dashboard", async (_req, res) => {
   const [approvedRecipes, pendingRequests, approvedRequests, rejectedRequests] = await Promise.all([
     Recipe.countDocuments({ status: "APPROVED" }),

@@ -1,6 +1,7 @@
 import { useEffect, useState, useContext, useMemo, useCallback } from "react";
 import API from "../services/api";
 import { AuthContext } from "../context/AuthContextObject";
+import { displayUsername } from "../utils/UserDisplay";
 
 export default function Comments({ recipeId }) {
 
@@ -29,7 +30,6 @@ export default function Comments({ recipeId }) {
     acc[key].push(comment);
     return acc;
   }, {}), [comments]);
-
 
   async function addComment() {
     const value = text.trim();
@@ -74,7 +74,7 @@ export default function Comments({ recipeId }) {
 
   function openReply(comment) {
     setReplyTo(comment._id);
-    setReplyText(`@${comment.username} `);
+    setReplyText(`@${displayUsername(comment.username)} `);
   }
 
   function renderCommentThread(parentKey = "root", level = 0) {
@@ -85,7 +85,7 @@ export default function Comments({ recipeId }) {
         key={comment._id || `${comment.username}-${comment.text}-${comment.createdAt}`}
         className={level === 0 ? "comment-item" : "reply-item"}
       >
-        <strong>{comment.username}</strong>
+        <strong>{displayUsername(comment.username)}</strong>
         <p>{comment.text}</p>
 
         <button className="rate-btn" onClick={() => openReply(comment)} disabled={!user}>

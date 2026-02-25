@@ -1,4 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
+import { displayUsername, isDeletedUser } from "../utils/UserDisplay";
 
 export default function RecipeCard({
   recipe,
@@ -9,6 +10,7 @@ export default function RecipeCard({
 }) {
   const navigate = useNavigate();
   const avgRating = Number(recipe.avgRating || 0).toFixed(1);
+  const deletedAuthor = isDeletedUser(recipe.createdBy);
 
   const myRating = Array.isArray(recipe.ratings)
     ? recipe.ratings.find((r) => r.username === currentUsername)?.value || 0
@@ -41,19 +43,23 @@ export default function RecipeCard({
 
       <p className="creator">
         By{" "}
-        <Link
-          to={`/users/${recipe.createdBy}`}
-          className="author-link"
-          onClick={(e) => {
-            e.stopPropagation();
-            if (!isLoggedIn) {
-              e.preventDefault();
-              navigate("/login");
-            }
-          }}
-        >
-          {recipe.createdBy || "Chef"}
-        </Link>
+        {deletedAuthor ? (
+          <span>{displayUsername(recipe.createdBy)}</span>
+        ) : (
+          <Link
+            to={`/users/${recipe.createdBy}`}
+            className="author-link"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!isLoggedIn) {
+                e.preventDefault();
+                navigate("/login");
+              }
+            }}
+          >
+            {displayUsername(recipe.createdBy)}
+          </Link>
+        )}
       </p>
 
       <p className="meta-row">⏱️ {recipe.prepTime || 0} mins · 🍽️ Serves {recipe.servings || 0}</p>

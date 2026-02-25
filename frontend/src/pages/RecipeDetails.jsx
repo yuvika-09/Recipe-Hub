@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import API from "../services/api";
 import { AuthContext } from "../context/AuthContextObject";
 import Comments from "../components/Comments";
+import { displayUsername, isDeletedUser } from "../utils/UserDisplay";
 
 export default function RecipeDetails() {
   const { id } = useParams();
@@ -96,6 +97,7 @@ export default function RecipeDetails() {
 
   const isOwner = user?.username === recipe.createdBy;
   const isAdmin = user?.role === "ADMIN";
+  const deletedAuthor = isDeletedUser(recipe.createdBy);
 
   return (
     <div className="container details-page">
@@ -104,9 +106,13 @@ export default function RecipeDetails() {
       <h2>{recipe.name}</h2>
       <p>
         By{" "}
-        <Link className="author-link" to={`/users/${recipe.createdBy}`}>
-          {recipe.createdBy}
-        </Link>
+        {deletedAuthor ? (
+          <span>{displayUsername(recipe.createdBy)}</span>
+        ) : (
+          <Link className="author-link" to={`/users/${recipe.createdBy}`}>
+            {displayUsername(recipe.createdBy)}
+          </Link>
+        )}
       </p>
 
       {recipe.imageUrl && (
